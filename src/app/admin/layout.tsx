@@ -70,8 +70,8 @@ export default function AdminLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0E0E1A]">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
       </div>
     )
   }
@@ -79,9 +79,9 @@ export default function AdminLayout({
   if (!isAdmin) return null
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0E0E1A]">
       {/* Top nav */}
-      <div className="border-b border-border bg-card">
+      <div className="border-b border-[#18182A] bg-[#0B0B14]">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-12">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
@@ -90,15 +90,15 @@ export default function AdminLayout({
                 Back to Chat
               </Link>
             </Button>
-            <Separator orientation="vertical" className="h-5" />
-            <span className="text-sm font-semibold text-foreground">Admin Panel</span>
+            <Separator orientation="vertical" className="h-5 bg-[#22223A]" />
+            <span className="text-sm font-medium text-white">Admin Panel</span>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto flex">
         {/* Sidebar */}
-        <aside className="w-48 shrink-0 border-r border-border min-h-[calc(100vh-48px)]">
+        <aside className="w-48 shrink-0 border-r border-[#18182A] min-h-[calc(100vh-48px)] bg-[#0B0B14]">
           <nav className="p-3 space-y-1">
             {adminNavItems.map((item) => {
               const isActive = pathname === item.href
@@ -107,10 +107,10 @@ export default function AdminLayout({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
+                    'flex items-center gap-2.5 rounded-[12px] px-3 py-2 text-sm transition-all duration-150',
                     isActive
-                      ? 'bg-sidebar-active text-primary font-medium'
-                      : 'text-foreground hover:bg-sidebar-hover'
+                      ? 'bg-[#1A1530] text-white font-medium'
+                      : 'text-[#8888A0] hover:bg-[#13131F] hover:text-white'
                   )}
                 >
                   <item.icon className="h-4 w-4" />

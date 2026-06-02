@@ -123,7 +123,7 @@ export default function PollCreateModal({ open, onOpenChange, roomId }: PollCrea
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 shrink-0 text-destructive"
+                      className="h-8 w-8 shrink-0 text-red-400 hover:text-red-300"
                       onClick={() => removeOption(option.id)}
                     >
                       <Trash2 className="h-4 w-4" />

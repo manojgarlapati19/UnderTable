@@ -77,38 +77,38 @@ export default function AdminInvitesPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Invite Links</h1>
+        <h1 className="text-[26px] font-medium text-white">Invite Links</h1>
         <Button onClick={() => setShowGenerate(true)}>
           <Link2 className="h-4 w-4 mr-1" /> Generate Link
         </Button>
       </div>
 
-      <div className="rounded-lg border border-border">
+      <div className="rounded-[16px] border border-[#22223A] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-sidebar-hover">
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Code</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Created</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Uses</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Status</th>
-                <th className="text-right px-4 py-2 font-medium text-muted-foreground">Actions</th>
+              <tr className="border-b border-[#22223A] bg-[#0B0B14]">
+                <th className="text-left px-4 py-2 font-medium text-[#56566E]">Code</th>
+                <th className="text-left px-4 py-2 font-medium text-[#56566E]">Created</th>
+                <th className="text-left px-4 py-2 font-medium text-[#56566E]">Uses</th>
+                <th className="text-left px-4 py-2 font-medium text-[#56566E]">Status</th>
+                <th className="text-right px-4 py-2 font-medium text-[#56566E]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {invites.map((invite) => (
-                <tr key={invite.id} className="border-b border-border">
+                <tr key={invite.id} className="border-b border-[#18182A] hover:bg-[#0B0B14]/50 transition-colors">
                   <td className="px-4 py-3">
-                    <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{invite.code}</code>
+                    <code className="text-xs bg-[#0B0B14] text-white px-1.5 py-0.5 rounded border border-[#22223A]">{invite.code}</code>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{getRelativeTime(invite.created_at)}</td>
-                  <td className="px-4 py-3">{invite.uses_count}/{invite.max_uses || '∞'}</td>
+                  <td className="px-4 py-3 text-[#56566E]">{getRelativeTime(invite.created_at)}</td>
+                  <td className="px-4 py-3 text-white">{invite.uses_count}/{invite.max_uses || '∞'}</td>
                   <td className="px-4 py-3">
                     <Badge variant={invite.is_active ? 'success' : 'destructive'}>
                       {invite.is_active ? 'Active' : 'Revoked'}
@@ -116,11 +116,11 @@ export default function AdminInvitesPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyLink(invite.code)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[8px]" onClick={() => copyLink(invite.code)}>
                         <Copy className="h-4 w-4" />
                       </Button>
                       {invite.is_active && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => revokeLink(invite.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[8px] text-red-400" onClick={() => revokeLink(invite.id)}>
                           <XCircle className="h-4 w-4" />
                         </Button>
                       )}
@@ -130,7 +130,7 @@ export default function AdminInvitesPage() {
               ))}
               {invites.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-[#56566E]">
                     No invite links yet
                   </td>
                 </tr>

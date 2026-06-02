@@ -33,7 +33,6 @@ function SignupPage() {
       router.push('/login')
       return
     }
-    // Generate name suggestions on mount
     setSuggestions(generateNameSuggestions(3))
     validateInvite()
   }, [inviteCode])
@@ -50,7 +49,6 @@ function SignupPage() {
     }
   }
 
-  // Debounced name availability check
   const checkNameAvailability = useCallback(
     async (nameToCheck: string) => {
       if (nameToCheck.length < 3) {
@@ -79,7 +77,6 @@ function SignupPage() {
 
   function handlePasswordChange(value: string) {
     setPassword(value)
-    // Simple password strength check
     if (value.length < 6) setPasswordStrength('weak')
     else if (value.length < 10 || !/[A-Z]/.test(value) || !/[0-9]/.test(value)) setPasswordStrength('fair')
     else setPasswordStrength('strong')
@@ -93,7 +90,6 @@ function SignupPage() {
     setError('')
 
     try {
-      // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -107,7 +103,6 @@ function SignupPage() {
       if (authError) throw authError
       if (!authData.user) throw new Error('Failed to create account')
 
-      // Create profile
       const { error: profileError } = await supabase.from('profiles').insert({
         id: authData.user.id,
         anonymous_name: name,
@@ -117,7 +112,6 @@ function SignupPage() {
 
       if (profileError) throw profileError
 
-      // Increment invite link usage
       const { data: inviteLink } = await supabase
         .from('invite_links')
         .select('id, uses_count')
@@ -145,28 +139,27 @@ function SignupPage() {
   if (!inviteCode) return null
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-auth-bg">
       <div className="w-full max-w-sm space-y-8 px-4">
         {/* Header */}
         <div className="text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary mb-4">
-            <span className="text-3xl">👻</span>
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-[16px] ghost-glow mb-5">
+            <span className="text-2xl font-bold text-white">U</span>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Join UnderTable</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-[26px] font-medium text-white">Join UnderTable</h1>
+          <p className="text-sm text-[#8888A0] mt-1">
             What happens UnderTable, stays UnderTable.
           </p>
         </div>
 
         {error && (
-          <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive text-center">
+          <div className="rounded-[12px] bg-red-500/10 p-3 text-sm text-red-400 text-center border border-red-500/20">
             {error}
           </div>
         )}
 
         {!error && (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name suggestions */}
             <div className="space-y-2">
               <Label>Choose your anonymous name</Label>
               <div className="flex flex-wrap gap-2">
@@ -178,7 +171,7 @@ function SignupPage() {
                       setName(suggestion)
                       checkNameAvailability(suggestion)
                     }}
-                    className="rounded-full border border-border px-3 py-1.5 text-xs transition-colors hover:border-primary hover:bg-primary/5"
+                    className="rounded-full border border-[#22223A] bg-[#13131F] px-3 py-1.5 text-xs text-white transition-all duration-150 hover:border-accent hover:bg-[#1A1530]"
                   >
                     {suggestion}
                   </button>
@@ -186,7 +179,6 @@ function SignupPage() {
               </div>
             </div>
 
-            {/* Name input */}
             <div className="space-y-2">
               <Label htmlFor="name">or type your own name</Label>
               <div className="relative">
@@ -200,20 +192,19 @@ function SignupPage() {
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {checkingName ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-4 w-4 animate-spin text-[#56566E]" />
                   ) : nameAvailable === true ? (
-                    <Check className="h-4 w-4 text-success" />
+                    <Check className="h-4 w-4 text-[#22C55E]" />
                   ) : nameAvailable === false ? (
-                    <X className="h-4 w-4 text-destructive" />
+                    <X className="h-4 w-4 text-[#EF4444]" />
                   ) : null}
                 </div>
               </div>
               {nameAvailable === false && (
-                <p className="text-xs text-destructive">This name is already taken</p>
+                <p className="text-xs text-[#EF4444]">This name is already taken</p>
               )}
             </div>
 
-            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -226,7 +217,6 @@ function SignupPage() {
               />
             </div>
 
-            {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -240,23 +230,23 @@ function SignupPage() {
               />
               {passwordStrength && (
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="flex-1 h-1.5 rounded-full bg-[#18182A] overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${
+                      className={`h-full rounded-full transition-all duration-300 ${
                         passwordStrength === 'weak'
-                          ? 'w-1/3 bg-destructive'
+                          ? 'w-1/3 bg-[#EF4444]'
                           : passwordStrength === 'fair'
-                          ? 'w-2/3 bg-warning'
-                          : 'w-full bg-success'
+                          ? 'w-2/3 bg-[#F59E0B]'
+                          : 'w-full bg-[#22C55E]'
                       }`}
                     />
                   </div>
                   <span className={`text-xs capitalize ${
                     passwordStrength === 'weak'
-                      ? 'text-destructive'
+                      ? 'text-[#EF4444]'
                       : passwordStrength === 'fair'
-                      ? 'text-warning'
-                      : 'text-success'
+                      ? 'text-[#F59E0B]'
+                      : 'text-[#22C55E]'
                   }`}>
                     {passwordStrength}
                   </span>
@@ -266,7 +256,7 @@ function SignupPage() {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-10 bg-accent-gradient text-white hover:bg-accent-gradient-hover shadow-lg shadow-purple-500/25"
               disabled={loading || !nameAvailable || !name || !email || !password}
             >
               {loading ? 'Creating account...' : 'Join UnderTable'}
@@ -280,7 +270,7 @@ function SignupPage() {
 
 export default function SignupPageWrapper() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-auth-bg"><div className="text-[#56566E]">Loading...</div></div>}>
       <SignupPage />
     </Suspense>
   )

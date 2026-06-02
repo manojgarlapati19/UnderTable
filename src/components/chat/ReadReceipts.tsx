@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { getAvatarColor } from '@/lib/utils/avatar-color'
+import { getAvatarGradient } from '@/lib/utils/avatar-color'
 import {
   Tooltip,
   TooltipContent,
@@ -30,7 +30,6 @@ export default function ReadReceipts({ messageId, maxVisible = 5 }: ReadReceipts
   useEffect(() => {
     loadReaders()
 
-    // Subscribe to new read receipts
     const channel = supabase
       .channel(`read-receipts-${messageId}`)
       .on(
@@ -88,12 +87,12 @@ export default function ReadReceipts({ messageId, maxVisible = 5 }: ReadReceipts
               <Avatar
                 key={reader.user_id}
                 className={cn(
-                  'h-4 w-4 border-2 border-background',
+                  'h-4 w-4 border-2 border-[#0E0E1A]',
                   i > 0 && '-ml-1.5'
                 )}
               >
                 <AvatarFallback
-                  style={{ backgroundColor: reader.avatar_color }}
+                  style={{ background: getAvatarGradient(reader.anonymous_name) }}
                   className="text-[6px] text-white font-medium"
                 >
                   {reader.anonymous_name.charAt(0)}
@@ -101,7 +100,7 @@ export default function ReadReceipts({ messageId, maxVisible = 5 }: ReadReceipts
               </Avatar>
             ))}
             {extra > 0 && (
-              <span className="text-[10px] text-muted-foreground ml-1">+{extra} more</span>
+              <span className="text-[10px] text-[#56566E] ml-1">+{extra} more</span>
             )}
           </div>
         </TooltipTrigger>

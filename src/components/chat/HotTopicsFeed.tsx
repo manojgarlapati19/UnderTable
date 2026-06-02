@@ -4,10 +4,8 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Flame } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { getRelativeTime } from '@/lib/utils/time'
-import { cn } from '@/lib/utils/cn'
 
 interface HotTopic {
   message_id: string
@@ -27,14 +25,13 @@ export default function HotTopicsFeed() {
 
   useEffect(() => {
     loadTopics()
-    const interval = setInterval(loadTopics, 5 * 60 * 1000) // Refresh every 5 min
+    const interval = setInterval(loadTopics, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
   async function loadTopics() {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-    // Get top 10 most-reacted messages in last 24h
     const { data: reactionCounts } = await supabase
       .from('reactions')
       .select('message_id, emoji')
@@ -45,7 +42,6 @@ export default function HotTopicsFeed() {
       return
     }
 
-    // Count reactions per message
     const countMap = new Map<string, { count: number; reactions: string[] }>()
     reactionCounts.forEach((r) => {
       const existing = countMap.get(r.message_id) || { count: 0, reactions: [] }
@@ -56,7 +52,6 @@ export default function HotTopicsFeed() {
       countMap.set(r.message_id, existing)
     })
 
-    // Sort by count and take top 10
     const sorted = [...countMap.entries()]
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 10)
@@ -66,7 +61,6 @@ export default function HotTopicsFeed() {
       return
     }
 
-    // Fetch message details
     const messageIds = sorted.map(([id]) => id)
     const { data: messages } = await supabase
       .from('messages')
@@ -97,9 +91,9 @@ export default function HotTopicsFeed() {
     return (
       <div className="p-4 space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="animate-pulse space-y-2">
-            <div className="h-3 w-20 skeleton rounded" />
-            <div className="h-4 w-full skeleton rounded" />
+          <div key={i} className="space-y-2">
+            <div className="h-3 w-20 skeleton rounded-[8px]" />
+            <div className="h-4 w-full skeleton rounded-[8px]" />
           </div>
         ))}
       </div>
@@ -109,8 +103,8 @@ export default function HotTopicsFeed() {
   if (topics.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <Flame className="h-8 w-8 text-muted-foreground mb-2" />
-        <p className="text-sm text-muted-foreground">No hot topics in the last 24 hours</p>
+        <Flame className="h-8 w-8 text-[#56566E] mb-2" />
+        <p className="text-sm text-[#56566E]">No hot topics in the last 24 hours</p>
       </div>
     )
   }
@@ -119,7 +113,7 @@ export default function HotTopicsFeed() {
     <div className="p-4">
       <div className="flex items-center gap-2 mb-4">
         <Flame className="h-5 w-5 text-orange-500" />
-        <h2 className="text-sm font-semibold text-foreground">Hot Topics</h2>
+        <h2 className="text-sm font-medium text-white">Hot Topics</h2>
       </div>
 
       <ScrollArea className="h-[calc(100vh-200px)]">
@@ -128,24 +122,24 @@ export default function HotTopicsFeed() {
             <a
               key={topic.message_id}
               href={`/chat/${topic.room_id}#msg-${topic.message_id}`}
-              className="block rounded-lg border border-border p-3 hover:border-primary/50 transition-colors group"
+              className="block rounded-[16px] border border-[#22223A] bg-[#13131F] p-3 hover:border-accent/50 transition-all duration-150 group"
             >
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="secondary" className="text-[10px]">
                   #{index + 1}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-[#56566E]">
                   {topic.room_emoji} {topic.room_name}
                 </span>
-                <span className="text-[10px] text-muted-foreground ml-auto">
+                <span className="text-[10px] text-[#56566E] ml-auto">
                   {getRelativeTime(topic.created_at)}
                 </span>
               </div>
-              <p className="text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+              <p className="text-sm text-white line-clamp-2 group-hover:text-accent transition-colors duration-150">
                 {topic.content}
               </p>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-[#56566E]">
                   🔥 {topic.reaction_count} reactions
                 </span>
                 <span className="text-xs">{topic.top_reactions.join(' ')}</span>

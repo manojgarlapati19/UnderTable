@@ -52,7 +52,7 @@ export default function AdminDashboardPage() {
     setStats({
       totalMembers: totalMembers || 0,
       pendingApprovals: pendingApprovals || 0,
-      activeToday: 0, // Would need presence data
+      activeToday: 0,
       messagesToday: messagesToday || 0,
       flaggedMessages: flaggedMessages?.length || 0,
       roomsCount: roomsCount || 0,
@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <h1 className="text-[26px] font-medium text-white">Dashboard</h1>
         <div className="flex gap-2">
           <Button onClick={generateInviteLink}>
             <Link2 className="h-4 w-4 mr-1" />
@@ -91,15 +91,15 @@ export default function AdminDashboardPage() {
       <StatsCards stats={stats} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1">
+        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[16px]">
           <Link2 className="h-5 w-5" />
           <span className="text-xs">Generate Invite Link</span>
         </Button>
-        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1">
+        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[16px]">
           <Plus className="h-5 w-5" />
           <span className="text-xs">Create Room</span>
         </Button>
-        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1">
+        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[16px]">
           <Shield className="h-5 w-5" />
           <span className="text-xs">Maintenance Mode</span>
         </Button>

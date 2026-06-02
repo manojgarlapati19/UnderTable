@@ -62,7 +62,7 @@ export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPick
               onKeyDown={(e) => e.key === 'Enter' && searchGifs()}
               placeholder="Search GIFs..."
             />
-            <Button onClick={searchGifs} disabled={loading}>
+            <Button onClick={searchGifs} disabled={loading} className="shrink-0">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </Button>
           </div>
@@ -70,7 +70,7 @@ export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPick
           <ScrollArea className="h-[400px]">
             {loading ? (
               <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <Loader2 className="h-8 w-8 animate-spin text-[#56566E]" />
               </div>
             ) : gifs.length > 0 ? (
               <div className="grid grid-cols-2 gap-2">
@@ -78,7 +78,7 @@ export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPick
                   <button
                     key={gif.id}
                     onClick={() => handleSelect(gif.media_formats?.gif?.url || gif.url)}
-                    className="rounded-lg overflow-hidden border border-border hover:border-primary transition-colors"
+                    className="rounded-[12px] overflow-hidden border border-[#22223A] hover:border-accent transition-colors duration-150"
                   >
                     <img
                       src={gif.media_formats?.tinygif?.url || gif.media_formats?.gif?.url}
@@ -90,7 +90,7 @@ export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPick
                 ))}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+              <div className="flex items-center justify-center h-full text-sm text-[#56566E]">
                 {query ? 'No results found' : 'Search for GIFs above'}
               </div>
             )}

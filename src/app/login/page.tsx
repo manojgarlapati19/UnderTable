@@ -47,23 +47,23 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-auth-bg">
       <div className="w-full max-w-sm space-y-8 px-4">
         {/* Logo */}
         <div className="text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary mb-4">
-            <span className="text-3xl">👻</span>
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-[16px] ghost-glow mb-5">
+            <span className="text-2xl font-bold text-white">U</span>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">UnderTable</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-[26px] font-medium text-white">UnderTable</h1>
+          <p className="text-sm text-[#8888A0] mt-1">
             What happens UnderTable, stays UnderTable.
           </p>
-          <p className="text-xs text-muted-foreground">Table Top Tech</p>
+          <p className="text-xs text-[#56566E]">Table Top Tech</p>
         </div>
 
         {/* Error banner */}
         {error && (
-          <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="flex items-center gap-2 rounded-[12px] bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <p>{error}</p>
           </div>
@@ -95,23 +95,24 @@ function LoginPage() {
                 placeholder="Enter your password"
                 required
                 autoComplete="current-password"
+                className="pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#56566E] hover:text-white transition-colors duration-150"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full h-10 bg-accent-gradient text-white hover:bg-accent-gradient-hover shadow-lg shadow-purple-500/25" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="text-center text-xs text-[#56566E]">
           Don&apos;t have an account? You need an invite link to join.
         </p>
       </div>
@@ -121,7 +122,7 @@ function LoginPage() {
 
 export default function LoginPageWrapper() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-auth-bg"><div className="text-[#56566E]">Loading...</div></div>}>
       <LoginPage />
     </Suspense>
   )

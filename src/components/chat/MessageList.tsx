@@ -53,7 +53,6 @@ export default function MessageList({
   const isScrolledUpRef = useRef(false)
   const supabase = createClient()
 
-  // Load initial messages
   useEffect(() => {
     loadMessages()
     loadPolls()
@@ -65,7 +64,6 @@ export default function MessageList({
     }
   }, [roomId])
 
-  // Scroll to bottom on new messages (if not scrolled up)
   useEffect(() => {
     if (!isScrolledUpRef.current && messages.length > 0) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -74,7 +72,6 @@ export default function MessageList({
     }
   }, [messages.length])
 
-  // Track scroll position
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -137,7 +134,6 @@ export default function MessageList({
           filter: `room_id=eq.${roomId}`,
         },
         async (payload) => {
-          // Fetch the full message with relations
           const { data } = await supabase
             .from('messages')
             .select(`
@@ -222,7 +218,6 @@ export default function MessageList({
     setHasNewMessages(false)
   }
 
-  // Group messages
   const groupedMessages = messages.reduce((groups: any[], msg, index) => {
     const prevMsg = index > 0 ? messages[index - 1] : null
     const isGroupStart =
@@ -238,11 +233,11 @@ export default function MessageList({
     return (
       <div className="flex-1 p-4 space-y-4 overflow-hidden">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex gap-2 animate-pulse">
+          <div key={i} className="flex gap-2">
             <div className="h-8 w-8 rounded-full skeleton" />
             <div className="flex-1 space-y-2">
-              <div className="h-3 w-32 skeleton rounded" />
-              <div className="h-4 w-64 skeleton rounded" />
+              <div className="h-3 w-32 skeleton rounded-[8px]" />
+              <div className="h-4 w-64 skeleton rounded-[8px]" />
             </div>
           </div>
         ))}
@@ -256,9 +251,11 @@ export default function MessageList({
         {/* Empty state */}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <div className="text-4xl mb-4">👻</div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">No messages yet</h3>
-            <p className="text-sm text-muted-foreground max-w-xs">
+            <div className="flex h-16 w-16 items-center justify-center rounded-[16px] bg-accent-gradient shadow-lg shadow-purple-500/20 mb-4">
+              <span className="text-2xl">👻</span>
+            </div>
+            <h3 className="text-lg font-medium text-white mb-1">No messages yet</h3>
+            <p className="text-sm text-[#56566E] max-w-xs">
               Be the first to send a message in this room
             </p>
           </div>
@@ -266,8 +263,8 @@ export default function MessageList({
 
         {/* Confession box notice */}
         {isConfessionBox && (
-          <div className="px-4 py-3 bg-orange-500/5 border-b border-orange-500/20">
-            <p className="text-xs text-orange-600 dark:text-orange-400 text-center">
+          <div className="px-4 py-3 bg-orange-500/5 border-b border-orange-500/10">
+            <p className="text-xs text-orange-400 text-center">
               🔥 This room has no memory. Messages auto-delete after 1 hour.
             </p>
           </div>
@@ -318,7 +315,7 @@ export default function MessageList({
       {hasNewMessages && (
         <Button
           onClick={scrollToBottom}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 shadow-lg animate-slide-up"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 shadow-xl animate-slide-up bg-[#13131F] border border-[#22223A] text-white hover:bg-[#1A1530]"
           size="sm"
         >
           <ArrowDown className="h-4 w-4 mr-1" />

@@ -4,56 +4,43 @@
 
 @layer base {
   :root {
-    --background: #ffffff;
-    --foreground: #0F172A;
-    --sidebar-bg: #F8FAFC;
-    --sidebar-hover: #F1F5F9;
-    --sidebar-active: #EDE9FE;
-    --card-bg: #ffffff;
-    --card-foreground: #0F172A;
-    --muted: #F1F5F9;
-    --muted-foreground: #64748B;
-    --border: #E2E8F0;
+    --background: #0E0E1A;
+    --foreground: #FFFFFF;
+    --sidebar-bg: #0B0B14;
+    --sidebar-hover: #13131F;
+    --sidebar-active: #1A1530;
+    --card-bg: #13131F;
+    --card-foreground: #FFFFFF;
+    --muted: #13131F;
+    --muted-foreground: #56566E;
+    --border: #18182A;
     --accent: #7C3AED;
-    --accent-foreground: #ffffff;
+    --accent-foreground: #FFFFFF;
     --destructive: #EF4444;
-    --destructive-foreground: #ffffff;
-    --success: #10B981;
+    --destructive-foreground: #FFFFFF;
+    --success: #22C55E;
     --warning: #F59E0B;
     --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: #0F172A;
-    --foreground: #F8FAFC;
-    --sidebar-bg: #1E293B;
-    --sidebar-hover: #334155;
-    --sidebar-active: #4C1D95;
-    --card-bg: #1E293B;
-    --card-foreground: #F8FAFC;
-    --muted: #334155;
-    --muted-foreground: #94A3B8;
-    --border: #334155;
-    --accent: #7C3AED;
-    --accent-foreground: #ffffff;
-    --destructive: #EF4444;
-    --destructive-foreground: #ffffff;
-    --success: #10B981;
-    --warning: #F59E0B;
   }
 }
 
 @layer base {
   * {
-    @apply border-[var(--border)];
+    @apply border-[#18182A];
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#0E0E1A] text-[#FFFFFF];
     font-family: var(--font-geist-sans), system-ui, sans-serif;
+    font-weight: 400;
   }
 
-  /* Custom scrollbar */
+  h1 {
+    font-weight: 500;
+    font-size: 26px;
+  }
+
+  /* Custom scrollbar - dark theme */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -64,12 +51,12 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background: #18182A;
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
+    background: #22223A;
   }
 }
 
@@ -86,10 +73,39 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Gradient glow for ghost logo */
+  .ghost-glow {
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
+    box-shadow: 0 0 40px rgba(124, 58, 237, 0.45);
+  }
+
+  /* Gradient avatar classes */
+  .avatar-gradient-0 { background: linear-gradient(135deg, #7C3AED, #9333EA); }
+  .avatar-gradient-1 { background: linear-gradient(135deg, #22C55E, #16A34A); }
+  .avatar-gradient-2 { background: linear-gradient(135deg, #F59E0B, #D97706); }
+  .avatar-gradient-3 { background: linear-gradient(135deg, #EC4899, #DB2777); }
+  .avatar-gradient-4 { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+  .avatar-gradient-5 { background: linear-gradient(135deg, #14B8A6, #0D9488); }
+  .avatar-gradient-6 { background: linear-gradient(135deg, #F97316, #EA580C); }
+  .avatar-gradient-7 { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+  .avatar-gradient-8 { background: linear-gradient(135deg, #06B6D4, #0891B2); }
+  .avatar-gradient-9 { background: linear-gradient(135deg, #A855F7, #9333EA); }
+
+  /* Glass effect */
+  .glass {
+    background: rgba(19, 19, 31, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
 }
 
-/* Custom animations for messages */
-@keyframes message-highlight {
+/* Message highlight animation */
+.message-highlight {
+  animation: message-highlight-anim 2s ease-out;
+}
+
+@keyframes message-highlight-anim {
   0% {
     background-color: rgba(124, 58, 237, 0.15);
   }
@@ -98,17 +114,13 @@
   }
 }
 
-.message-highlight {
-  animation: message-highlight 2s ease-out;
-}
-
 /* Typing indicator dots */
 .typing-dot {
   display: inline-block;
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background-color: var(--muted-foreground);
+  background-color: #7C3AED;
   animation: pulse-dot 1.4s infinite ease-in-out both;
 }
 
@@ -137,9 +149,9 @@
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--muted) 25%,
-    var(--sidebar-hover) 50%,
-    var(--muted) 75%
+    #13131F 25%,
+    #1A1530 50%,
+    #13131F 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;

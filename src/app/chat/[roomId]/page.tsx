@@ -90,7 +90,6 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
   const handleSend = useCallback(
     async (content: string, replyToId?: string | null) => {
-      // For confession box rooms, set expires_at to 1 hour
       const expiresAt = room?.is_confession_box
         ? new Date(Date.now() + 60 * 60 * 1000).toISOString()
         : undefined
@@ -115,7 +114,6 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
   const handleEdit = useCallback(
     async (messageId: string) => {
-      // This is handled inline in MessageItem
     },
     []
   )
@@ -208,8 +206,8 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
   if (!room || !profile) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading room...</p>
+      <div className="flex-1 flex items-center justify-center bg-[#0E0E1A]">
+        <p className="text-[#56566E]">Loading room...</p>
       </div>
     )
   }
@@ -220,16 +218,13 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   return (
     <>
       {/* Room Header */}
-      <div
-        className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0"
-        style={{ borderBottomColor: accentColor, borderBottomWidth: 2 }}
-      >
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#18182A] bg-[#0E0E1A] shrink-0">
         <div className="flex items-center gap-3">
           <span className="text-xl">{room.icon_emoji}</span>
           <div>
-            <h1 className="text-sm font-semibold text-foreground">{room.name}</h1>
+            <h1 className="text-sm font-medium text-white">{room.name}</h1>
             {room.description && (
-              <p className="text-xs text-muted-foreground">{room.description}</p>
+              <p className="text-xs text-[#56566E]">{room.description}</p>
             )}
           </div>
         </div>
@@ -237,22 +232,25 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         <div className="flex items-center gap-2">
           {onlineCount > 0 && (
             <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
               {onlineCount}
             </Badge>
           )}
 
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[11px]">
             <Pin className="h-4 w-4" />
           </Button>
 
           {isAdmin && (
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[11px]">
               <Settings className="h-4 w-4" />
             </Button>
           )}
         </div>
       </div>
+
+      {/* Accent color accent bar */}
+      <div className="h-0.5 w-full" style={{ backgroundColor: accentColor }} />
 
       {/* Pinned Messages Bar */}
       <PinnedMessagesBar roomId={params.roomId} accentColor={accentColor} />

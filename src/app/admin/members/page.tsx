@@ -107,7 +107,7 @@ export default function AdminMembersPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-accent" />
       </div>
     )
   }
@@ -115,10 +115,10 @@ export default function AdminMembersPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Members</h1>
+        <h1 className="text-[26px] font-medium text-white">Members</h1>
         {selectedIds.size > 0 && tab === 'pending' && (
           <div className="flex gap-2">
-            <Button size="sm" onClick={bulkApprove}>Approve all ({selectedIds.size})</Button>
+            <Button size="sm" className="bg-[#22C55E] hover:bg-[#16A34A] text-white" onClick={bulkApprove}>Approve all ({selectedIds.size})</Button>
             <Button size="sm" variant="destructive" onClick={bulkReject}>Reject all ({selectedIds.size})</Button>
           </div>
         )}
@@ -133,16 +133,16 @@ export default function AdminMembersPage() {
 
         <TabsContent value="pending" className="mt-4">
           {members.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pending approvals</p>
+            <p className="text-sm text-[#56566E]">No pending approvals</p>
           ) : (
             <div className="space-y-2">
               {members.map((member) => (
-                <div key={member.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <div key={member.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
                   <input
                     type="checkbox"
                     checked={selectedIds.has(member.id)}
                     onChange={() => toggleSelect(member.id)}
-                    className="rounded border-border"
+                    className="rounded border-[#22223A] bg-[#0B0B14] accent-accent"
                   />
                   <Avatar className="h-8 w-8">
                     <AvatarFallback style={{ backgroundColor: getAvatarColor(member.anonymous_name) }} className="text-white text-xs">
@@ -150,14 +150,14 @@ export default function AdminMembersPage() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{member.anonymous_name}</p>
-                    <p className="text-xs text-muted-foreground">Joined {getRelativeTime(member.created_at)}</p>
+                    <p className="text-sm font-medium text-white">{member.anonymous_name}</p>
+                    <p className="text-xs text-[#56566E]">Joined {getRelativeTime(member.created_at)}</p>
                   </div>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" className="text-success" onClick={() => approveMember(member.id)}>
+                    <Button size="sm" variant="ghost" className="text-[#22C55E] hover:text-[#22C55E] hover:bg-[#22C55E]/10" onClick={() => approveMember(member.id)}>
                       <Check className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => rejectMember(member.id)}>
+                    <Button size="sm" variant="ghost" className="text-[#EF4444] hover:text-[#EF4444] hover:bg-[#EF4444]/10" onClick={() => rejectMember(member.id)}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -169,24 +169,24 @@ export default function AdminMembersPage() {
 
         <TabsContent value="approved" className="mt-4">
           {members.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No approved members</p>
+            <p className="text-sm text-[#56566E]">No approved members</p>
           ) : (
             <div className="space-y-2">
               {members.map((member) => (
-                <div key={member.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <div key={member.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback style={{ backgroundColor: getAvatarColor(member.anonymous_name) }} className="text-white text-xs">
                       {member.anonymous_name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{member.anonymous_name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm font-medium text-white">{member.anonymous_name}</p>
+                    <p className="text-xs text-[#56566E]">
                       {member.role === 'admin' && <Badge variant="default" className="mr-1">Admin</Badge>}
                       Joined {getRelativeTime(member.created_at)}
                     </p>
                   </div>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => banMember(member.id)}>
+                  <Button size="sm" variant="ghost" className="text-[#EF4444] hover:text-[#EF4444] hover:bg-[#EF4444]/10" onClick={() => banMember(member.id)}>
                     <Ban className="h-4 w-4" />
                   </Button>
                 </div>
@@ -197,21 +197,21 @@ export default function AdminMembersPage() {
 
         <TabsContent value="banned" className="mt-4">
           {members.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No banned members</p>
+            <p className="text-sm text-[#56566E]">No banned members</p>
           ) : (
             <div className="space-y-2">
               {members.map((member) => (
-                <div key={member.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <div key={member.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback style={{ backgroundColor: getAvatarColor(member.anonymous_name) }} className="text-white text-xs">
                       {member.anonymous_name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{member.anonymous_name}</p>
-                    <p className="text-xs text-muted-foreground">Banned</p>
+                    <p className="text-sm font-medium text-white">{member.anonymous_name}</p>
+                    <p className="text-xs text-[#56566E]">Banned</p>
                   </div>
-                  <Button size="sm" variant="ghost" className="text-success" onClick={() => unbanMember(member.id)}>
+                  <Button size="sm" variant="ghost" className="text-[#22C55E] hover:text-[#22C55E] hover:bg-[#22C55E]/10" onClick={() => unbanMember(member.id)}>
                     Unban
                   </Button>
                 </div>

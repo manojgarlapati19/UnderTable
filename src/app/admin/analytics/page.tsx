@@ -41,8 +41,8 @@ export default function AdminAnalyticsPage() {
     avgMessagesPerDay: 0,
   })
 
-  const isDark = theme === 'dark'
-  const textColor = isDark ? '#94A3B8' : '#64748B'
+  const isDark = true
+  const textColor = '#8888A0'
 
   useEffect(() => {
     loadData()
@@ -54,7 +54,6 @@ export default function AdminAnalyticsPage() {
     const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
 
     try {
-      // Messages per day
       const { data: messages } = await supabase
         .from('messages')
         .select('created_at')
@@ -95,7 +94,6 @@ export default function AdminAnalyticsPage() {
         )
       }
 
-      // Most active rooms
       const { data: roomMessages } = await supabase
         .from('messages')
         .select('room_id, rooms!inner(name, icon_emoji)')
@@ -119,7 +117,6 @@ export default function AdminAnalyticsPage() {
         )
       }
 
-      // Top reactions
       const { data: reactions } = await supabase
         .from('reactions')
         .select('emoji')
@@ -138,7 +135,6 @@ export default function AdminAnalyticsPage() {
         )
       }
 
-      // Counts
       const { count: totalMessages } = await supabase
         .from('messages').select('*', { count: 'exact', head: true })
 
@@ -167,13 +163,13 @@ export default function AdminAnalyticsPage() {
   const REACTION_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#F59E0B', '#EF4444']
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
+        <h1 className="text-[26px] font-medium text-white">Analytics</h1>
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger className="w-32">
             <SelectValue />
@@ -188,45 +184,46 @@ export default function AdminAnalyticsPage() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-lg font-bold">{stats.totalMessages.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Total Messages</p>
+        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+          <p className="text-lg font-bold text-white">{stats.totalMessages.toLocaleString()}</p>
+          <p className="text-xs text-[#56566E]">Total Messages</p>
         </div>
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-lg font-bold">{stats.totalMembers}</p>
-          <p className="text-xs text-muted-foreground">Total Members</p>
+        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+          <p className="text-lg font-bold text-white">{stats.totalMembers}</p>
+          <p className="text-xs text-[#56566E]">Total Members</p>
         </div>
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-lg font-bold">{stats.activeToday}</p>
-          <p className="text-xs text-muted-foreground">Active Today</p>
+        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+          <p className="text-lg font-bold text-white">{stats.activeToday}</p>
+          <p className="text-xs text-[#56566E]">Active Today</p>
         </div>
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-lg font-bold">{stats.roomsCount}</p>
-          <p className="text-xs text-muted-foreground">Rooms</p>
+        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+          <p className="text-lg font-bold text-white">{stats.roomsCount}</p>
+          <p className="text-xs text-[#56566E]">Rooms</p>
         </div>
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-lg font-bold">{stats.avgMessagesPerDay}</p>
-          <p className="text-xs text-muted-foreground">Avg Msgs/Day</p>
+        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+          <p className="text-lg font-bold text-white">{stats.avgMessagesPerDay}</p>
+          <p className="text-xs text-[#56566E]">Avg Msgs/Day</p>
         </div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Messages per day */}
-        <div className="rounded-lg border border-border p-4">
-          <h3 className="text-sm font-medium mb-4">Messages Per Day</h3>
+        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+          <h3 className="text-sm font-medium text-white mb-4">Messages Per Day</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={messageData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#E2E8F0'} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#22223A" />
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: textColor }} />
                 <YAxis tick={{ fontSize: 11, fill: textColor }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: isDark ? '#1E293B' : '#fff',
-                    border: `1px solid ${isDark ? '#334155' : '#E2E8F0'}`,
+                    backgroundColor: '#13131F',
+                    border: '1px solid #22223A',
                     borderRadius: '8px',
                     fontSize: '12px',
+                    color: '#fff',
                   }}
                 />
                 <Line type="monotone" dataKey="messages" stroke="#7C3AED" strokeWidth={2} dot={false} />
@@ -236,20 +233,21 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Peak activity hours */}
-        <div className="rounded-lg border border-border p-4">
-          <h3 className="text-sm font-medium mb-4">Peak Activity Hours</h3>
+        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+          <h3 className="text-sm font-medium text-white mb-4">Peak Activity Hours</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#E2E8F0'} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#22223A" />
                 <XAxis dataKey="hour" tick={{ fontSize: 10, fill: textColor }} />
                 <YAxis tick={{ fontSize: 11, fill: textColor }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: isDark ? '#1E293B' : '#fff',
-                    border: `1px solid ${isDark ? '#334155' : '#E2E8F0'}`,
+                    backgroundColor: '#13131F',
+                    border: '1px solid #22223A',
                     borderRadius: '8px',
                     fontSize: '12px',
+                    color: '#fff',
                   }}
                 />
                 <Bar dataKey="messages" fill="#7C3AED" radius={[2, 2, 0, 0]} />
@@ -259,20 +257,21 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Most active rooms */}
-        <div className="rounded-lg border border-border p-4">
-          <h3 className="text-sm font-medium mb-4">Most Active Rooms</h3>
+        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+          <h3 className="text-sm font-medium text-white mb-4">Most Active Rooms</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={roomData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#E2E8F0'} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#22223A" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: textColor }} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: textColor }} width={100} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: isDark ? '#1E293B' : '#fff',
-                    border: `1px solid ${isDark ? '#334155' : '#E2E8F0'}`,
+                    backgroundColor: '#13131F',
+                    border: '1px solid #22223A',
                     borderRadius: '8px',
                     fontSize: '12px',
+                    color: '#fff',
                   }}
                 />
                 <Bar dataKey="messages" fill="#7C3AED" radius={[0, 4, 4, 0]} />
@@ -282,8 +281,8 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Top reactions */}
-        <div className="rounded-lg border border-border p-4">
-          <h3 className="text-sm font-medium mb-4">Top Reactions</h3>
+        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+          <h3 className="text-sm font-medium text-white mb-4">Top Reactions</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -302,10 +301,11 @@ export default function AdminAnalyticsPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: isDark ? '#1E293B' : '#fff',
-                    border: `1px solid ${isDark ? '#334155' : '#E2E8F0'}`,
+                    backgroundColor: '#13131F',
+                    border: '1px solid #22223A',
                     borderRadius: '8px',
                     fontSize: '12px',
+                    color: '#fff',
                   }}
                 />
               </PieChart>

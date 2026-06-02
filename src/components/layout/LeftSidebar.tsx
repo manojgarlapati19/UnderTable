@@ -4,32 +4,18 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
-  MessageSquare,
   Plus,
-  Search,
-  Bookmark,
-  Settings,
-  LogOut,
-  Moon,
-  Sun,
-  Ghost,
   Lock,
   Flame,
-  Trophy,
-  Home,
-  Menu,
-  Eye,
-  EyeOff,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/cn'
-import { getAvatarColor, getAvatarBgColor } from '@/lib/utils/avatar-color'
+import { getAvatarGradient } from '@/lib/utils/avatar-color'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { useTheme } from 'next-themes'
 import type { Tables } from '@/lib/supabase/database.types'
 
 interface LeftSidebarProps {
@@ -46,11 +32,9 @@ interface RoomWithUnread extends Tables<'rooms'> {
 export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { theme, setTheme } = useTheme()
   const supabase = createClient()
   const [profile, setProfile] = useState<Tables<'profiles'> | null>(null)
   const [rooms, setRooms] = useState<RoomWithUnread[]>([])
-  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     loadProfile()
@@ -69,7 +53,6 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
 
     if (data) {
       setProfile(data)
-      setIsAdmin(data.role === 'admin')
     }
   }
 
@@ -87,24 +70,7 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
     }
   }
 
-  async function toggleGhostMode() {
-    if (!profile) return
-    const { error } = await supabase
-      .from('profiles')
-      .update({ ghost_mode: !profile.ghost_mode })
-      .eq('id', profile.id)
-
-    if (!error) {
-      setProfile({ ...profile, ghost_mode: !profile.ghost_mode })
-    }
-  }
-
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
-
-  const avatarColor = profile ? getAvatarColor(profile.anonymous_name) : '#7C3AED'
+  const avatarGradient = profile ? getAvatarGradient(profile.anonymous_name) : 'linear-gradient(135deg, #7C3AED, #9333EA)'
   const initial = profile?.anonymous_name?.charAt(0) || '?'
 
   return (
@@ -112,96 +78,84 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-[#07070D]/80 lg:hidden"
           onClick={onToggle}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - 220px room sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-sidebar border-r border-border transition-transform duration-300 lg:relative lg:translate-x-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed inset-y-0 left-16 z-50 flex w-[220px] flex-col bg-[#0B0B14] border-r border-[#18182A] transition-transform duration-300 lg:relative lg:translate-x-0',
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:-translate-x-full'
         )}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="text-lg">👻</span>
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-foreground">UnderTable</h1>
-            <p className="text-[10px] text-muted-foreground">Table Top Tech</p>
-          </div>
+        {/* "Table Top Tech" Label */}
+        <div className="px-4 pt-4 pb-2">
+          <p className="text-[10px] font-medium text-[#4A4A60] uppercase tracking-widest">
+            Table Top Tech
+          </p>
         </div>
 
-        <Separator />
-
         {/* Identity Card */}
-        <div className="px-3 py-3">
-          <div className="flex items-center gap-3 rounded-lg bg-card p-2 border border-border">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback style={{ backgroundColor: avatarColor }} className="text-white text-xs">
+        <div className="px-3 pb-3">
+          <div className="flex items-center gap-3 rounded-[16px] bg-[#13131F] p-3 border border-[#22223A]">
+            <Avatar className="h-8 w-8 ring-2 ring-[#22C55E]/30">
+              <AvatarFallback
+                style={{ background: avatarGradient }}
+                className="text-white text-xs"
+              >
                 {initial}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-foreground truncate">
+              <p className="text-sm font-medium text-white truncate">
                 {profile?.anonymous_name || 'Loading...'}
               </p>
-              <p className="text-[10px] text-muted-foreground">You are</p>
+              <div className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+                <span className="text-[10px] text-[#8888A0]">Online</span>
+              </div>
             </div>
-            <button
-              onClick={toggleGhostMode}
-              className={cn(
-                'rounded-md p-1.5 transition-colors',
-                profile?.ghost_mode
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-sidebar-hover'
-              )}
-              title={profile?.ghost_mode ? 'Ghost mode active' : 'Toggle ghost mode'}
-            >
-              {profile?.ghost_mode ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            </button>
           </div>
         </div>
 
         <Separator />
 
         {/* Rooms Header */}
-        <div className="flex items-center justify-between px-4 py-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="flex items-center justify-between px-4 py-3">
+          <span className="text-[11px] font-medium text-[#56566E] uppercase tracking-wider">
             Rooms
           </span>
-          {isAdmin && (
-            <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-              <Link href="/admin/rooms">
-                <Plus className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          )}
+          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-[8px] text-[#56566E] hover:text-white" asChild>
+            <Link href="/admin/rooms">
+              <Plus className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
         </div>
 
         {/* Rooms List */}
         <ScrollArea className="flex-1 px-2">
           <div className="space-y-0.5 py-1">
             {rooms.map((room) => {
-              const isActive = pathname === `/chat/${room.id}`
+              const currentRoomId = pathname.split('/chat/')[1]
+              const isActive = currentRoomId === room.id || pathname === `/chat/${room.id}`
               return (
                 <Link
                   key={room.id}
                   href={`/chat/${room.id}`}
+                  onClick={() => onToggle()}
                   className={cn(
-                    'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
+                    'flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm transition-all duration-150',
                     isActive
-                      ? 'bg-sidebar-active text-primary font-medium'
-                      : 'text-foreground hover:bg-sidebar-hover'
+                      ? 'bg-[#1A1530] text-white font-medium'
+                      : 'text-[#8888A0] hover:bg-[#13131F] hover:text-white'
                   )}
                 >
                   <span className="text-base">{room.icon_emoji}</span>
                   <span className="flex-1 truncate">{room.name}</span>
                   <div className="flex items-center gap-1">
-                    {room.is_private && <Lock className="h-3 w-3 text-muted-foreground" />}
+                    {room.is_private && <Lock className="h-3 w-3 text-[#56566E]" />}
                     {room.is_confession_box && <Flame className="h-3 w-3 text-orange-500" />}
                     {room.unread_count ? (
                       <Badge variant="default" className="h-5 min-w-5 px-1 text-[10px]">
@@ -215,54 +169,11 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
           </div>
         </ScrollArea>
 
-        <Separator />
-
-        {/* Bottom Controls */}
-        <div className="p-2 space-y-1">
-          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" asChild>
-            <Link href="/search">
-              <Search className="h-4 w-4 mr-2" />
-              Search
-            </Link>
-          </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" asChild>
-            <Link href="/bookmarks">
-              <Bookmark className="h-4 w-4 mr-2" />
-              Bookmarks
-            </Link>
-          </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" asChild>
-            <Link href="/chat">
-              <Flame className="h-4 w-4 mr-2" />
-              Hot Topics
-            </Link>
-          </Button>
-          {isAdmin && (
-            <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" asChild>
-              <Link href="/admin">
-                <Settings className="h-4 w-4 mr-2" />
-                Admin Panel
-              </Link>
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-muted-foreground"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
-            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-destructive hover:text-destructive"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+        {/* Bottom hint */}
+        <div className="px-4 py-3">
+          <p className="text-[10px] text-[#4A4A60] text-center">
+            What happens UnderTable, stays UnderTable.
+          </p>
         </div>
       </aside>
     </>

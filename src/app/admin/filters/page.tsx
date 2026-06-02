@@ -64,24 +64,23 @@ export default function AdminFiltersPage() {
   const testHighlights = testMessage ? getHighlightedKeywords(testMessage, keywordList) : []
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-foreground">Keyword Filters</h1>
+      <h1 className="text-[26px] font-medium text-white">Keyword Filters</h1>
 
-      {/* Current blocklist */}
       <div className="space-y-3">
         <Label>Current Blocklist</Label>
-        <div className="flex flex-wrap gap-2 p-4 rounded-lg border border-border min-h-10">
+        <div className="flex flex-wrap gap-2 p-4 rounded-[16px] border border-[#22223A] bg-[#13131F] min-h-10">
           {keywords.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No keywords added yet</p>
+            <p className="text-sm text-[#56566E]">No keywords added yet</p>
           ) : (
             keywords.map((kw) => (
               <Badge key={kw.id} variant="secondary" className="gap-1 text-sm px-3 py-1">
                 {kw.word}
-                <button onClick={() => removeKeyword(kw.id)} className="ml-1 hover:text-destructive">
+                <button onClick={() => removeKeyword(kw.id)} className="ml-1 hover:text-red-400">
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
@@ -90,7 +89,6 @@ export default function AdminFiltersPage() {
         </div>
       </div>
 
-      {/* Add word */}
       <div className="flex gap-2 items-end">
         <div className="flex-1 space-y-2">
           <Label htmlFor="newWord">Add Keyword</Label>
@@ -107,10 +105,9 @@ export default function AdminFiltersPage() {
         </Button>
       </div>
 
-      {/* Test message */}
-      <div className="space-y-3 rounded-lg border border-border p-4">
+      <div className="space-y-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
         <div className="flex items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
+          <Search className="h-4 w-4 text-[#56566E]" />
           <Label>Test a Message</Label>
         </div>
         <Textarea
@@ -122,13 +119,13 @@ export default function AdminFiltersPage() {
         {testHighlights.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              <span className="font-medium text-warning">Flagged words found:</span>
+              <AlertTriangle className="h-4 w-4 text-[#F59E0B]" />
+              <span className="font-medium text-[#F59E0B]">Flagged words found:</span>
             </div>
-            <div className="rounded-lg bg-muted p-3 text-sm">
+            <div className="rounded-[12px] bg-[#0B0B14] p-3 text-sm text-white">
               {testHighlights.map((part, i) =>
                 part.isMatch ? (
-                  <span key={i} className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1 rounded">
+                  <span key={i} className="bg-red-900/30 text-red-400 px-1 rounded">
                     {part.text}
                   </span>
                 ) : (
@@ -139,7 +136,7 @@ export default function AdminFiltersPage() {
           </div>
         )}
         {testMessage && testHighlights.length === 0 && (
-          <p className="text-sm text-success">No flagged words found ✓</p>
+          <p className="text-sm text-[#22C55E]">No flagged words found ✓</p>
         )}
       </div>
     </div>

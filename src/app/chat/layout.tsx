@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import IconRail from '@/components/layout/IconRail'
 import LeftSidebar from '@/components/layout/LeftSidebar'
 import RightSidebar from '@/components/layout/RightSidebar'
 import SettingsModal from '@/components/layout/SettingsModal'
@@ -48,15 +49,15 @@ export default function ChatLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0E0E1A]">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
       </div>
     )
   }
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-[#0E0E1A]">
         {/* Mobile hamburger */}
         <Button
           variant="ghost"
@@ -67,7 +68,10 @@ export default function ChatLayout({
           <Menu className="h-5 w-5" />
         </Button>
 
-        {/* Left Sidebar */}
+        {/* Icon Rail - always visible on desktop */}
+        <IconRail onOpenSettings={() => setSettingsOpen(true)} />
+
+        {/* Left Sidebar - Room sidebar */}
         <LeftSidebar
           isOpen={sidebarOpen}
           onToggle={() => setSidebarOpen(false)}
@@ -75,7 +79,7 @@ export default function ChatLayout({
         />
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 flex flex-col min-w-0 bg-[#0E0E1A]">
           {children}
         </main>
 

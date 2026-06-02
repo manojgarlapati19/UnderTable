@@ -37,7 +37,6 @@ export default function SearchPage() {
       setSearched(true)
 
       try {
-        // Use ILIKE for simple search (full-text search would require postgres extension)
         const { data } = await supabase
           .from('messages')
           .select(`
@@ -74,7 +73,7 @@ export default function SearchPage() {
     const parts = text.split(regex)
     return parts.map((part, i) =>
       regex.test(part) ? (
-        <span key={i} className="bg-primary/20 text-primary font-medium rounded px-0.5">
+        <span key={i} className="text-accent font-medium rounded px-0.5">
           {part}
         </span>
       ) : (
@@ -84,7 +83,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0E0E1A]">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -95,7 +94,7 @@ export default function SearchPage() {
           </Button>
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#56566E]" />
               <Input
                 value={query}
                 onChange={(e) => handleInput(e.target.value)}
@@ -109,31 +108,30 @@ export default function SearchPage() {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <Loader2 className="h-6 w-6 animate-spin text-accent" />
           </div>
         ) : searched && results.length === 0 ? (
           <div className="text-center py-12">
-            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium text-foreground mb-1">No results found</h3>
-            <p className="text-sm text-muted-foreground">
+            <Search className="h-12 w-12 text-[#56566E] mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-medium text-white mb-1">No results found</h3>
+            <p className="text-sm text-[#56566E]">
               No messages match your search query
             </p>
           </div>
         ) : !searched ? (
           <div className="text-center py-12">
-            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium text-foreground mb-1">Search messages</h3>
-            <p className="text-sm text-muted-foreground">
+            <Search className="h-12 w-12 text-[#56566E] mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-medium text-white mb-1">Search messages</h3>
+            <p className="text-sm text-[#56566E]">
               Type to search across all rooms
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-[#56566E] mb-4">
               {results.length} result{results.length !== 1 ? 's' : ''}
             </p>
 
-            {/* Group by room */}
             {Object.entries(
               results.reduce<Record<string, SearchResult[]>>((groups, result) => {
                 const key = result.room_id
@@ -147,7 +145,7 @@ export default function SearchPage() {
                   <Badge variant="secondary">
                     {roomResults[0].rooms.icon_emoji} {roomResults[0].rooms.name}
                   </Badge>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[10px] text-[#56566E]">
                     {roomResults.length} message{roomResults.length !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -156,12 +154,12 @@ export default function SearchPage() {
                   <Link
                     key={result.id}
                     href={`/chat/${result.room_id}#msg-${result.id}`}
-                    className="block rounded-lg border border-border p-3 hover:border-primary/30 transition-colors"
+                    className="block rounded-[16px] border border-[#22223A] bg-[#13131F] p-3 hover:border-accent/50 transition-all duration-150"
                   >
-                    <p className="text-sm text-foreground line-clamp-3 mb-1">
+                    <p className="text-sm text-white line-clamp-3 mb-1">
                       {highlightText(result.content, query)}
                     </p>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[10px] text-[#56566E]">
                       {getRelativeTime(result.created_at)}
                     </span>
                   </Link>

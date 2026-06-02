@@ -142,13 +142,13 @@ export default function AdminRoomsPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Rooms</h1>
+        <h1 className="text-[26px] font-medium text-white">Rooms</h1>
         <Button onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1" /> Create Room
         </Button>
@@ -156,23 +156,23 @@ export default function AdminRoomsPage() {
 
       <div className="space-y-2">
         {rooms.map((room) => (
-          <div key={room.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+          <div key={room.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3 hover:border-accent/30 transition-all duration-150">
             <span className="text-xl">{room.icon_emoji}</span>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">{room.name}</span>
-                {room.is_private && <Lock className="h-3 w-3 text-muted-foreground" />}
+                <span className="text-sm font-medium text-white">{room.name}</span>
+                {room.is_private && <Lock className="h-3 w-3 text-[#56566E]" />}
                 {room.is_confession_box && <Flame className="h-3 w-3 text-orange-500" />}
               </div>
               {room.description && (
-                <p className="text-xs text-muted-foreground">{room.description}</p>
+                <p className="text-xs text-[#56566E]">{room.description}</p>
               )}
             </div>
             <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(room)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[8px]" onClick={() => openEdit(room)}>
                 <Edit className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteRoom(room.id)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[8px] text-red-400" onClick={() => deleteRoom(room.id)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -180,7 +180,6 @@ export default function AdminRoomsPage() {
         ))}
       </div>
 
-      {/* Create/Edit Dialog */}
       <Dialog open={showCreate || !!editingRoom} onOpenChange={(open) => {
         if (!open) { setShowCreate(false); setEditingRoom(null); resetForm() }
       }}>
@@ -209,20 +208,20 @@ export default function AdminRoomsPage() {
                     type="color"
                     value={form.accent_color}
                     onChange={(e) => setForm({ ...form, accent_color: e.target.value })}
-                    className="h-9 w-12 rounded border border-border cursor-pointer"
+                    className="h-9 w-12 rounded-[8px] border border-[#22223A] bg-[#0B0B14] cursor-pointer"
                   />
-                  <span className="text-xs text-muted-foreground">{form.accent_color}</span>
+                  <span className="text-xs text-[#56566E]">{form.accent_color}</span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Switch checked={form.is_private} onCheckedChange={(v) => setForm({ ...form, is_private: v })} />
-                <Label className="cursor-pointer">Private</Label>
+                <Label className="cursor-pointer text-white">Private</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.is_confession_box} onCheckedChange={(v) => setForm({ ...form, is_confession_box: v })} />
-                <Label className="cursor-pointer">Confession Box</Label>
+                <Label className="cursor-pointer text-white">Confession Box</Label>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

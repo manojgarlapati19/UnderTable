@@ -56,7 +56,6 @@ export default function AdminStartersPage() {
   }
 
   async function postNow(question: string, starterId: string) {
-    // Find the #general room
     const { data: generalRoom } = await supabase
       .from('rooms')
       .select('id')
@@ -71,7 +70,6 @@ export default function AdminStartersPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // Post as system message (we'll use admin user's ID as sender)
     const { error: msgError } = await supabase.from('messages').insert({
       room_id: generalRoom.id,
       user_id: user.id,
@@ -79,7 +77,6 @@ export default function AdminStartersPage() {
     })
 
     if (!msgError) {
-      // Mark as posted
       await supabase
         .from('conversation_starters')
         .update({ posted_at: new Date().toISOString() })
@@ -91,7 +88,7 @@ export default function AdminStartersPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
   }
 
   const unposted = starters.filter((s) => !s.posted_at)
@@ -100,10 +97,9 @@ export default function AdminStartersPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Conversation Starters</h1>
+        <h1 className="text-[26px] font-medium text-white">Conversation Starters</h1>
       </div>
 
-      {/* Add new */}
       <div className="flex gap-2 items-end">
         <div className="flex-1 space-y-2">
           <Label htmlFor="question">Add a question</Label>
@@ -120,21 +116,20 @@ export default function AdminStartersPage() {
         </Button>
       </div>
 
-      {/* Unposted starters */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-foreground">Ready to Post ({unposted.length})</h3>
+        <h3 className="text-sm font-medium text-white">Ready to Post ({unposted.length})</h3>
         {unposted.length === 0 ? (
-          <p className="text-sm text-muted-foreground">All starters have been posted</p>
+          <p className="text-sm text-[#56566E]">All starters have been posted</p>
         ) : (
           <div className="space-y-2">
             {unposted.map((starter) => (
-              <div key={starter.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
-                <p className="flex-1 text-sm">{starter.question}</p>
+              <div key={starter.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+                <p className="flex-1 text-sm text-white">{starter.question}</p>
                 <div className="flex gap-1">
                   <Button size="sm" variant="outline" onClick={() => postNow(starter.question, starter.id)}>
                     <Send className="h-3 w-3 mr-1" /> Post now
                   </Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteStarter(starter.id)}>
+                  <Button size="sm" variant="ghost" className="text-red-400" onClick={() => deleteStarter(starter.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -144,14 +139,13 @@ export default function AdminStartersPage() {
         )}
       </div>
 
-      {/* Posted starters */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground">Already Posted ({posted.length})</h3>
+        <h3 className="text-sm font-medium text-[#56566E]">Already Posted ({posted.length})</h3>
         {posted.map((starter) => (
-          <div key={starter.id} className="flex items-center gap-3 rounded-lg border border-border p-3 opacity-60">
-            <p className="flex-1 text-sm">{starter.question}</p>
+          <div key={starter.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3 opacity-60">
+            <p className="flex-1 text-sm text-white">{starter.question}</p>
             <Badge variant="secondary">Posted</Badge>
-            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteStarter(starter.id)}>
+            <Button size="sm" variant="ghost" className="text-red-400" onClick={() => deleteStarter(starter.id)}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>

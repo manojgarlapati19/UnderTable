@@ -48,7 +48,6 @@ export default function ReactionBar({
   const supabase = createClient()
 
   async function handleReaction(emoji: string) {
-    // Optimistic update
     const key = `${messageId}-${emoji}`
     if (optimisticReactions.has(key)) {
       setOptimisticReactions((prev) => {
@@ -56,7 +55,6 @@ export default function ReactionBar({
         next.delete(key)
         return next
       })
-      // Remove reaction
       await supabase
         .from('reactions')
         .delete()
@@ -69,7 +67,6 @@ export default function ReactionBar({
         next.add(key)
         return next
       })
-      // Add reaction
       await supabase
         .from('reactions')
         .insert({ message_id: messageId, user_id: userId, emoji })
@@ -78,14 +75,13 @@ export default function ReactionBar({
 
   return (
     <div className="flex items-center gap-0.5">
-      {/* Reaction buttons */}
       {REACTIONS.map((emoji) => (
         <button
           key={emoji}
           onClick={() => handleReaction(emoji)}
           className={cn(
-            'flex h-7 w-7 items-center justify-center rounded-md text-sm transition-all hover:bg-sidebar-hover hover:scale-110',
-            optimisticReactions.has(`${messageId}-${emoji}`) && 'bg-primary/10 scale-110'
+            'flex h-7 w-7 items-center justify-center rounded-[8px] text-sm transition-all duration-150 hover:bg-[#1A1530] hover:scale-110',
+            optimisticReactions.has(`${messageId}-${emoji}`) && 'bg-[#1A1530] scale-110'
           )}
           title={`React with ${emoji}`}
         >
@@ -93,19 +89,18 @@ export default function ReactionBar({
         </button>
       ))}
 
-      <div className="w-px h-5 bg-border mx-1" />
+      <div className="w-px h-5 bg-[#22223A] mx-1" />
 
-      {/* Action buttons */}
       <button
         onClick={onReply}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-hover transition-colors"
+        className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[#56566E] hover:bg-[#1A1530] hover:text-white transition-all duration-150"
         title="Reply"
       >
         <Reply className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onBookmark}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-hover transition-colors"
+        className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[#56566E] hover:bg-[#1A1530] hover:text-white transition-all duration-150"
         title="Bookmark"
       >
         <Bookmark className="h-3.5 w-3.5" />
@@ -114,7 +109,7 @@ export default function ReactionBar({
       {canEdit && (
         <button
           onClick={onEdit}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-hover transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[#56566E] hover:bg-[#1A1530] hover:text-white transition-all duration-150"
           title="Edit"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -124,7 +119,7 @@ export default function ReactionBar({
       {(isOwn || isAdmin) && (
         <button
           onClick={onDelete}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-destructive/70 hover:bg-destructive/10 transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-[8px] text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
           title="Delete"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -134,7 +129,7 @@ export default function ReactionBar({
       {isAdmin && (
         <button
           onClick={onPin}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-hover transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[#56566E] hover:bg-[#1A1530] hover:text-white transition-all duration-150"
           title="Pin"
         >
           <Pin className="h-3.5 w-3.5" />
@@ -143,7 +138,7 @@ export default function ReactionBar({
 
       <button
         onClick={onReport}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-hover transition-colors"
+        className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[#56566E] hover:bg-[#1A1530] hover:text-white transition-all duration-150"
         title="Report"
       >
         <Flag className="h-3.5 w-3.5" />
@@ -152,7 +147,7 @@ export default function ReactionBar({
       {!isOwn && (
         <button
           onClick={onBlock}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-hover transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[#56566E] hover:bg-[#1A1530] hover:text-white transition-all duration-150"
           title="Block user"
         >
           <Ban className="h-3.5 w-3.5" />

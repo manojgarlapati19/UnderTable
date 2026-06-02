@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { RealtimePresenceState } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/cn'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -62,7 +61,6 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          // Get current user info
           const { data: { user } } = await supabase.auth.getUser()
           if (!user) return
 
@@ -86,13 +84,12 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
         }
       })
 
-    // Idle detection
     let idleTimer: NodeJS.Timeout
     const resetIdle = () => {
       clearTimeout(idleTimer)
       idleTimer = setTimeout(async () => {
         await channel.track({ is_idle: true })
-      }, 2 * 60 * 1000) // 2 minutes
+      }, 2 * 60 * 1000)
     }
 
     const events = ['mousedown', 'keydown', 'mousemove', 'touchstart']
@@ -106,19 +103,18 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
     }
   }, [currentRoomId])
 
-  // Filter ghost users
   const visibleUsers = onlineUsers.filter((u) => !u.ghost_mode)
   const ghostUsers = onlineUsers.filter((u) => u.ghost_mode)
   const roomUsers = visibleUsers.filter((u) => u.current_room === currentRoomId)
 
   return (
-    <aside className="hidden xl:flex w-50 flex-col bg-sidebar border-l border-border">
+    <aside className="hidden xl:flex w-[200px] flex-col bg-[#0B0B14] border-l border-[#18182A]">
       {/* Online now header */}
-      <div className="px-4 py-3 border-b border-border">
+      <div className="px-4 py-3 border-b border-[#18182A]">
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-success" />
-          <span className="text-sm font-semibold text-foreground">Online Now</span>
-          <Badge variant="secondary" className="ml-auto text-xs">
+          <div className="h-2 w-2 rounded-full bg-[#22C55E]" />
+          <span className="text-sm font-medium text-white">Online Now</span>
+          <Badge variant="secondary" className="ml-auto text-[10px]">
             {visibleUsers.length}
           </Badge>
         </div>
@@ -126,14 +122,13 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
 
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-3">
-          {/* Online users */}
           {visibleUsers.length > 0 ? (
             <div className="space-y-1">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Online</p>
+              <p className="text-[10px] font-medium text-[#56566E] uppercase tracking-wider">Online</p>
               {visibleUsers.map((user) => {
                 const color = getAvatarColor(user.anonymous_name)
                 return (
-                  <div key={user.user_id} className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-sidebar-hover transition-colors">
+                  <div key={user.user_id} className="flex items-center gap-2.5 rounded-[11px] px-2 py-1.5 hover:bg-[#13131F] transition-colors duration-150">
                     <div className="relative">
                       <Avatar className="h-7 w-7">
                         <AvatarFallback style={{ backgroundColor: color }} className="text-white text-xs">
@@ -142,58 +137,56 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
                       </Avatar>
                       <div
                         className={cn(
-                          'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-sidebar',
-                          user.is_idle ? 'bg-warning' : 'bg-success'
+                          'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0B0B14]',
+                          user.is_idle ? 'bg-[#F59E0B]' : 'bg-[#22C55E]'
                         )}
                       />
                     </div>
-                    <span className="text-xs text-foreground truncate">{user.anonymous_name}</span>
+                    <span className="text-xs text-white truncate">{user.anonymous_name}</span>
                   </div>
                 )
               })}
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-xs text-muted-foreground">No one is online</p>
+              <p className="text-xs text-[#56566E]">No one is online</p>
             </div>
           )}
 
-          {/* Ghost users */}
           {ghostUsers.length > 0 && (
             <div className="space-y-1">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Incognito</p>
+              <p className="text-[10px] font-medium text-[#56566E] uppercase tracking-wider">Incognito</p>
               {ghostUsers.map((user) => (
-                <div key={user.user_id} className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-sidebar-hover transition-colors">
+                <div key={user.user_id} className="flex items-center gap-2.5 rounded-[11px] px-2 py-1.5 hover:bg-[#13131F] transition-colors duration-150">
                   <div className="relative">
                     <Avatar className="h-7 w-7">
-                      <AvatarFallback className="bg-muted text-muted-foreground">
+                      <AvatarFallback className="bg-[#13131F] text-[#56566E]">
                         <Ghost className="h-3.5 w-3.5" />
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-muted-foreground border-2 border-sidebar" />
+                    <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#4A4A60] border-2 border-[#0B0B14]" />
                   </div>
-                  <span className="text-xs text-muted-foreground">Someone</span>
+                  <span className="text-xs text-[#56566E]">Someone</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* In this room */}
           {currentRoomId && roomUsers.length > 0 && (
             <>
-              <hr className="border-border" />
+              <hr className="border-[#18182A]" />
               <div className="space-y-1">
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">In this room</p>
+                <p className="text-[10px] font-medium text-[#56566E] uppercase tracking-wider">In this room</p>
                 {roomUsers.map((user) => {
                   const color = getAvatarColor(user.anonymous_name)
                   return (
-                    <div key={user.user_id} className="flex items-center gap-2.5 rounded-md px-2 py-1.5">
+                    <div key={user.user_id} className="flex items-center gap-2.5 rounded-[11px] px-2 py-1.5">
                       <Avatar className="h-6 w-6">
                         <AvatarFallback style={{ backgroundColor: color }} className="text-white text-[10px]">
                           {user.anonymous_name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs text-foreground truncate">{user.anonymous_name}</span>
+                      <span className="text-xs text-white truncate">{user.anonymous_name}</span>
                     </div>
                   )
                 })}

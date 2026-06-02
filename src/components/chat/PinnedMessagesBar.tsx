@@ -40,13 +40,10 @@ export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessage
   if (pinnedMessages.length === 0) return null
 
   return (
-    <div
-      className="border-b border-border"
-      style={{ borderLeftColor: accentColor, borderLeftWidth: 3 }}
-    >
+    <div className="border-b border-[#18182A]" style={{ borderLeftColor: accentColor, borderLeftWidth: 3 }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+        className="flex items-center gap-2 px-4 py-1.5 text-xs text-[#56566E] hover:text-white transition-colors duration-150 w-full"
       >
         <Pin className="h-3 w-3" />
         <span>{pinnedMessages.length} pinned message{pinnedMessages.length > 1 ? 's' : ''}</span>
@@ -57,14 +54,14 @@ export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessage
           <div className="space-y-1">
             {pinnedMessages.map((pm) => (
               <div key={pm.id} className="flex items-start gap-2 py-1">
-                <Pin className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                <Pin className="h-3 w-3 text-accent mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">
+                  <p className="text-xs text-[#56566E]">
+                    <span className="font-medium text-white">
                       {pm.messages?.profiles?.anonymous_name}
                     </span>
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-xs text-[#56566E] truncate">
                     {pm.messages?.content}
                   </p>
                 </div>

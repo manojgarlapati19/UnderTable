@@ -20,13 +20,13 @@ export default async function InvitePage({ params }: InvitePageProps) {
     (invite.max_uses && invite.uses_count >= invite.max_uses)
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-auth-bg">
         <div className="text-center max-w-sm px-4">
           <div className="text-6xl mb-6">🚫</div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">
+          <h1 className="text-[26px] font-medium text-white mb-2">
             Invalid Invite Link
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-[#8888A0]">
             This invite link is invalid or has expired. Please ask your admin for a new one.
           </p>
         </div>
@@ -34,6 +34,5 @@ export default async function InvitePage({ params }: InvitePageProps) {
     )
   }
 
-  // Valid invite - redirect to signup with code
   redirect(`/signup?code=${params.code}`)
 }

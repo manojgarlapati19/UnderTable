@@ -99,23 +99,21 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
   }))
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-      {/* Header */}
+    <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-medium text-foreground">{poll.question}</h3>
+        <h3 className="text-sm font-medium text-white">{poll.question}</h3>
         {isClosed && (
           <Badge variant="secondary" className="shrink-0">Poll closed</Badge>
         )}
       </div>
 
-      {/* Voting or results */}
       {!userVote && !isClosed ? (
         <div className="space-y-1.5">
           {options.map((option) => (
             <button
               key={option.id}
               onClick={() => handleVote(option.id)}
-              className="w-full text-left rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:border-primary hover:bg-primary/5"
+              className="w-full text-left rounded-[12px] border border-[#22223A] px-3 py-2 text-sm text-white transition-all duration-150 hover:border-accent hover:bg-[#1A1530]"
             >
               {option.text}
             </button>
@@ -123,7 +121,6 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
         </div>
       ) : (
         <>
-          {/* Chart */}
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
@@ -131,7 +128,7 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
                 <YAxis
                   type="category"
                   dataKey="name"
-                  tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }}
+                  tick={{ fontSize: 11, fill: isDark ? '#8888A0' : '#64748B' }}
                   width={80}
                 />
                 <Bar dataKey="votes" fill="#7C3AED" radius={[0, 4, 4, 0]} />
@@ -139,21 +136,20 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
             </ResponsiveContainer>
           </div>
 
-          {/* Vote counts */}
           <div className="space-y-1">
             {options.map((option) => (
               <div key={option.id} className="flex items-center justify-between text-sm">
-                <span className="text-foreground">{option.text}</span>
+                <span className="text-white">{option.text}</span>
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-24 rounded-full bg-muted overflow-hidden">
+                  <div className="h-2 w-24 rounded-full bg-[#18182A] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-primary transition-all"
+                      className="h-full rounded-full bg-accent transition-all duration-300"
                       style={{
                         width: `${totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0}%`,
                       }}
                     />
                   </div>
-                  <span className="text-xs text-muted-foreground w-8 text-right">
+                  <span className="text-xs text-[#56566E] w-8 text-right">
                     {totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0}%
                   </span>
                 </div>
@@ -163,15 +159,14 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
         </>
       )}
 
-      {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center justify-between text-xs text-[#56566E]">
         <span>{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</span>
         <div className="flex items-center gap-2">
           {poll.expires_at && !isClosed && (
             <span>Ends {formatDate(poll.expires_at)}</span>
           )}
           {isAdmin && !isClosed && (
-            <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={handleClosePoll}>
+            <Button variant="ghost" size="sm" className="h-6 text-xs text-[#56566E]" onClick={handleClosePoll}>
               Close poll
             </Button>
           )}

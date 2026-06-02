@@ -35,10 +35,10 @@ export default function ReactionPill({
           <button
             onClick={onToggle}
             className={cn(
-              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-all hover:scale-105',
+              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-all duration-150 hover:scale-110',
               hasReacted
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-border bg-background text-muted-foreground hover:bg-sidebar-hover'
+                ? 'border-accent bg-[#1A1530] text-[#C4B5FD]'
+                : 'border-[#22223A] bg-[#13131F] text-[#56566E] hover:bg-[#1A1530] hover:text-white'
             )}
           >
             <span>{emoji}</span>

@@ -43,7 +43,6 @@ export default function MessageInput({
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const supabase = createClient()
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -51,7 +50,6 @@ export default function MessageInput({
     }
   }, [content])
 
-  // Slow mode timer
   useEffect(() => {
     if (slowModeTimer > 0) {
       const interval = setInterval(() => {
@@ -67,7 +65,6 @@ export default function MessageInput({
     }
   }, [slowModeTimer])
 
-  // Emit typing presence via callback
   const emitTyping = useCallback(() => {
     onTypingChange?.(true)
   }, [onTypingChange])
@@ -90,7 +87,6 @@ export default function MessageInput({
       setContent('')
       onDismissReply()
 
-      // Start slow mode countdown
       if (slowModeSeconds > 0) {
         setSlowModeTimer(slowModeSeconds)
       }
@@ -120,8 +116,8 @@ export default function MessageInput({
 
   if (isReadonly) {
     return (
-      <div className="border-t border-border p-4">
-        <div className="rounded-lg bg-muted p-3 text-center text-sm text-muted-foreground">
+      <div className="border-t border-[#18182A] p-4 bg-[#0E0E1A]">
+        <div className="rounded-[16px] bg-[#13131F] p-3 text-center text-sm text-[#56566E] border border-[#22223A]">
           UnderTable is currently in read-only mode. Check back soon!
         </div>
       </div>
@@ -129,7 +125,7 @@ export default function MessageInput({
   }
 
   return (
-    <div className="border-t border-border">
+    <div className="border-t border-[#18182A] bg-[#0E0E1A]">
       {/* Reply preview */}
       {replyTo && (
         <ReplyPreview
@@ -141,49 +137,44 @@ export default function MessageInput({
 
       {/* Slow mode indicator */}
       {slowModeTimer > 0 && (
-        <div className="px-4 py-1.5 text-xs text-muted-foreground text-center bg-muted">
+        <div className="px-4 py-1.5 text-xs text-[#56566E] text-center bg-[#13131F]">
           You can send again in {slowModeTimer}s
         </div>
       )}
 
       <div className="flex items-end gap-2 p-3">
-        {/* Action buttons */}
-        <div className="flex items-center gap-1 pb-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            title="Add emoji"
-          >
-            <Smile className="h-4 w-4" />
-          </Button>
-          {!isConfessionBox && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground"
-                onClick={onOpenGif}
-                title="Add GIF"
-              >
-                <Image className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground"
-                onClick={onOpenPoll}
-                title="Create poll"
-              >
-                <BarChart3 className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-        </div>
+        {/* Composer box */}
+        <div className="flex-1 flex items-end gap-2 rounded-[16px] border border-[#22223A] bg-[#13131F] px-3 py-2 transition-all duration-150 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/30">
+          {/* Action buttons */}
+          <div className="flex items-center gap-1 pb-1">
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[#56566E] hover:bg-[#1A1530] hover:text-accent transition-all duration-150"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              title="Add emoji"
+            >
+              <Smile className="h-4 w-4" />
+            </button>
+            {!isConfessionBox && (
+              <>
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[#56566E] hover:bg-[#1A1530] hover:text-accent transition-all duration-150"
+                  onClick={onOpenGif}
+                  title="Add GIF"
+                >
+                  <Image className="h-4 w-4" />
+                </button>
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[#56566E] hover:bg-[#1A1530] hover:text-accent transition-all duration-150"
+                  onClick={onOpenPoll}
+                  title="Create poll"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
 
-        {/* Input */}
-        <div className="flex-1 relative">
+          {/* Text input */}
           <textarea
             ref={textareaRef}
             value={content}
@@ -194,26 +185,30 @@ export default function MessageInput({
             onKeyDown={handleKeyDown}
             placeholder={`Message as ${profileName}...`}
             disabled={slowModeTimer > 0}
-            className="w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 pr-10 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 placeholder:text-muted-foreground"
+            className="flex-1 resize-none bg-transparent px-1 py-1 text-sm text-white outline-none placeholder:text-[#4A4A60] disabled:opacity-50"
             rows={1}
           />
-        </div>
 
-        {/* Send button */}
-        <Button
-          onClick={handleSend}
-          disabled={!content.trim() || isSending || slowModeTimer > 0}
-          size="icon"
-          className="h-9 w-9 rounded-full shrink-0"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
+          {/* Send button */}
+          <button
+            onClick={handleSend}
+            disabled={!content.trim() || isSending || slowModeTimer > 0}
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-full transition-all duration-150 shrink-0',
+              content.trim() && !isSending && slowModeTimer === 0
+                ? 'bg-accent-gradient text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50'
+                : 'bg-[#22223A] text-[#56566E]'
+            )}
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Emoji picker popover */}
       {showEmojiPicker && (
         <div className="absolute bottom-full left-4 mb-2 z-50">
-          <div className="rounded-lg border border-border bg-background shadow-lg p-2">
+          <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] shadow-xl p-2">
             <div className="grid grid-cols-8 gap-1">
               {['👍', '❤️', '😂', '🔥', '😮', '🎉', '🙏', '💯',
                 '✨', '🚀', '👀', '💪', '🤔', '😅', '🥳', '👏',
@@ -221,7 +216,7 @@ export default function MessageInput({
                 <button
                   key={emoji}
                   onClick={() => insertEmoji(emoji)}
-                  className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-sidebar-hover transition-colors text-lg"
+                  className="h-8 w-8 flex items-center justify-center rounded-[8px] hover:bg-[#1A1530] transition-colors duration-150 text-lg"
                 >
                   {emoji}
                 </button>

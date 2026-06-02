@@ -25,18 +25,29 @@ const config: Config = {
           800: "#5B21B6",
           900: "#4C1D95",
         },
-        navy: {
-          DEFAULT: "#0F172A",
-          50: "#F8FAFC",
-          100: "#F1F5F9",
-          200: "#E2E8F0",
-          300: "#CBD5E1",
-          400: "#94A3B8",
-          500: "#64748B",
-          600: "#475569",
-          700: "#334155",
-          800: "#1E293B",
-          900: "#0F172A",
+        // Design system custom colors
+        dark: {
+          bg: "#07070D",
+          "bg-alt": "#0B0B14",
+          "bg-main": "#0E0E1A",
+          surface: "#13131F",
+          bubble: "#16162A",
+          border: "#18182A",
+          "border-hover": "#22223A",
+        },
+        accent: {
+          DEFAULT: "#7C3AED",
+          hover: "#A855F7",
+        },
+        text: {
+          primary: "#FFFFFF",
+          secondary: "#8888A0",
+          muted: "#56566E",
+          hint: "#4A4A60",
+        },
+        status: {
+          online: "#22C55E",
+          idle: "#F59E0B",
         },
         sidebar: {
           DEFAULT: "var(--sidebar-bg)",
@@ -52,6 +63,12 @@ const config: Config = {
         sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "monospace"],
       },
+      backgroundImage: {
+        "accent-gradient": "linear-gradient(135deg, #7C3AED, #9333EA)",
+        "accent-gradient-hover": "linear-gradient(135deg, #7C3AED, #A855F7)",
+        "auth-bg": "radial-gradient(circle at 50% 30%, #1A1530 0%, #0B0B14 100%)",
+        "message-own": "linear-gradient(135deg, #7C3AED, #9333EA)",
+      },
       keyframes: {
         "slide-up": {
           "0%": { transform: "translateY(10px)", opacity: "0" },
@@ -63,7 +80,7 @@ const config: Config = {
         },
         "bounce-in": {
           "0%": { transform: "scale(0)" },
-          "50%": { transform: "scale(1.2)" },
+          "50%": { transform: "scale(1.15)" },
           "100%": { transform: "scale(1)" },
         },
         "pulse-dot": {
@@ -78,6 +95,14 @@ const config: Config = {
           "0%": { transform: "translateX(100%)" },
           "100%": { transform: "translateX(0)" },
         },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "message-highlight-anim": {
+          "0%": { backgroundColor: "rgba(124, 58, 237, 0.15)" },
+          "100%": { backgroundColor: "transparent" },
+        },
       },
       animation: {
         "slide-up": "slide-up 0.3s ease-out",
@@ -86,6 +111,14 @@ const config: Config = {
         "pulse-dot": "pulse-dot 1.4s infinite ease-in-out both",
         "slide-in-left": "slide-in-left 0.3s ease-out",
         "slide-in-right": "slide-in-right 0.3s ease-out",
+        shimmer: "shimmer 1.5s infinite",
+        "message-highlight": "message-highlight-anim 2s ease-out",
+      },
+      borderRadius: {
+        "bubble": "16px",
+        "input": "12px",
+        "icon": "11px",
+        "full": "50%",
       },
     },
   },

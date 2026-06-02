@@ -108,12 +108,12 @@ export default function AdminReportsPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-foreground">Reports</h1>
+      <h1 className="text-[26px] font-medium text-white">Reports</h1>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
@@ -124,17 +124,17 @@ export default function AdminReportsPage() {
 
         <TabsContent value={tab} className="mt-4">
           {reports.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No reports to review</p>
+            <p className="text-sm text-[#56566E]">No reports to review</p>
           ) : (
             <div className="space-y-3">
               {reports.map((report) => (
-                <div key={report.id} className="rounded-lg border border-border p-4">
+                <div key={report.id} className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Badge variant={report.messages.is_flagged ? 'warning' : 'destructive'}>
                         {report.messages.is_flagged ? 'Auto-flagged' : report.reason}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-[#56566E]">
                         {getRelativeTime(report.created_at)}
                       </span>
                     </div>
@@ -143,12 +143,12 @@ export default function AdminReportsPage() {
                     </Badge>
                   </div>
 
-                  <p className="text-sm text-foreground bg-muted rounded p-2 mb-2">
+                  <p className="text-sm text-white bg-[#0B0B14] rounded-[12px] p-2 mb-2 border border-[#18182A]">
                     {report.messages.content}
                   </p>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-[#56566E]">
                       From: {report.messages.profiles.anonymous_name}
                     </span>
                     <div className="flex gap-1">

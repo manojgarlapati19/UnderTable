@@ -15,28 +15,28 @@ interface StatsCardsProps {
 }
 
 const cards = [
-  { label: 'Total Members', value: 'totalMembers', icon: Users, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950' },
-  { label: 'Pending Approvals', value: 'pendingApprovals', icon: Clock, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950' },
-  { label: 'Active Today', value: 'activeToday', icon: Activity, color: 'text-green-500 bg-green-50 dark:bg-green-950' },
-  { label: 'Messages Today', value: 'messagesToday', icon: MessageSquare, color: 'text-violet-500 bg-violet-50 dark:bg-violet-950' },
-  { label: 'Flagged Messages', value: 'flaggedMessages', icon: Flag, color: 'text-red-500 bg-red-50 dark:bg-red-950' },
-  { label: 'Rooms', value: 'roomsCount', icon: Hash, color: 'text-cyan-500 bg-cyan-50 dark:bg-cyan-950' },
+  { label: 'Total Members', value: 'totalMembers' as const, icon: Users, color: 'text-blue-400 bg-blue-500/10' },
+  { label: 'Pending Approvals', value: 'pendingApprovals' as const, icon: Clock, color: 'text-amber-400 bg-amber-500/10' },
+  { label: 'Active Today', value: 'activeToday' as const, icon: Activity, color: 'text-green-400 bg-green-500/10' },
+  { label: 'Messages Today', value: 'messagesToday' as const, icon: MessageSquare, color: 'text-violet-400 bg-violet-500/10' },
+  { label: 'Flagged Messages', value: 'flaggedMessages' as const, icon: Flag, color: 'text-red-400 bg-red-500/10' },
+  { label: 'Rooms', value: 'roomsCount' as const, icon: Hash, color: 'text-cyan-400 bg-cyan-500/10' },
 ]
 
 export default function StatsCards({ stats }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {cards.map((card) => (
-        <div key={card.value} className="rounded-lg border border-border bg-card p-4">
+        <div key={card.value} className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4 hover:border-accent/30 transition-all duration-150">
           <div className="flex items-center gap-3">
-            <div className={cn('rounded-lg p-2', card.color)}>
+            <div className={cn('rounded-[12px] p-2', card.color)}>
               <card.icon className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">
-                {stats[card.value as keyof typeof stats]}
+              <p className="text-2xl font-bold text-white">
+                {stats[card.value]}
               </p>
-              <p className="text-[10px] text-muted-foreground">{card.label}</p>
+              <p className="text-[10px] text-[#56566E]">{card.label}</p>
             </div>
           </div>
         </div>
