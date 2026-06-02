@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import { generateNameSuggestions } from '@/lib/utils/name-generator'
 import { getAvatarColor } from '@/lib/utils/avatar-color'
 import { toast } from 'sonner'
 
-export default function SignupPage() {
+function SignupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const inviteCode = searchParams.get('code')
@@ -275,5 +275,13 @@ export default function SignupPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function SignupPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignupPage />
+    </Suspense>
   )
 }
