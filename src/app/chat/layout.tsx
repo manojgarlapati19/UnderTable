@@ -57,7 +57,7 @@ export default function ChatLayout({
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen bg-[#0E0E1A]">
+      <div className="flex h-screen w-screen overflow-hidden bg-[#0E0E1A]">
         {/* Mobile hamburger */}
         <Button
           variant="ghost"

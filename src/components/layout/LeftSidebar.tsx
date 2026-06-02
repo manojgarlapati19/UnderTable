@@ -60,10 +60,13 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data } = await supabase
+    console.log('[LeftSidebar] Fetching rooms...')
+    const { data, error } = await supabase
       .from('rooms')
       .select('*')
       .order('name')
+
+    console.log('[LeftSidebar] Rooms result:', data, error)
 
     if (data) {
       setRooms(data)
@@ -84,10 +87,12 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
       )}
 
       {/* Sidebar - 220px room sidebar */}
+      {/* Desktop: always visible in-flow. Mobile: overlay drawer sliding from left */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-16 z-50 flex w-[220px] flex-col bg-[#0B0B14] border-r border-[#18182A] transition-transform duration-300 lg:relative lg:translate-x-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:-translate-x-full'
+          'fixed inset-y-0 left-16 z-50 flex w-[220px] flex-col bg-[#0B0B14] border-r border-[#18182A] shrink-0 transition-transform duration-300 lg:relative lg:left-0',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+          'lg:!translate-x-0'
         )}
       >
         {/* "Table Top Tech" Label */}

@@ -20,13 +20,17 @@ export default function ChatIndexPage() {
   }, [])
 
   async function loadRooms() {
-    const { data: rooms } = await supabase
+    console.log('[ChatIndex] Fetching rooms to redirect...')
+    const { data: rooms, error } = await supabase
       .from('rooms')
       .select('id')
       .order('name')
       .limit(1)
 
+    console.log('[ChatIndex] Rooms result:', rooms, error)
+
     if (rooms && rooms.length > 0) {
+      console.log('[ChatIndex] Redirecting to /chat/' + rooms[0].id)
       router.push(`/chat/${rooms[0].id}`)
     } else {
       setError('No rooms available. Please contact an admin.')
