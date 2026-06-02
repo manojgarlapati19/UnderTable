@@ -1,0 +1,225 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { getAvatarColor } from '@/lib/utils/avatar-color'
+import { getRelativeTime } from '@/lib/utils/time'
+
+import { Check, X, Ban, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import type { Tables } from '@/lib/supabase/database.types'
+
+export default function AdminMembersPage() {
+  const supabase = createClient()
+  const [members, setMembers] = useState<Tables<'profiles'>[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [tab, setTab] = useState('pending')
+
+  useEffect(() => {
+    loadMembers()
+  }, [tab])
+
+  async function loadMembers() {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('status', tab === 'pending' ? 'pending' : tab === 'approved' ? 'approved' : 'banned')
+      .order('created_at', { ascending: false })
+
+    if (data) setMembers(data)
+    setLoading(false)
+  }
+
+  async function approveMember(userId: string) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ status: 'approved' })
+      .eq('id', userId)
+
+    if (!error) {
+      toast.success('Member approved')
+      setMembers((prev) => prev.filter((m) => m.id !== userId))
+    }
+  }
+
+  async function rejectMember(userId: string) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ status: 'banned' })
+      .eq('id', userId)
+
+    if (!error) {
+      toast.success('Member rejected')
+      setMembers((prev) => prev.filter((m) => m.id !== userId))
+    }
+  }
+
+  async function banMember(userId: string) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ status: 'banned' })
+      .eq('id', userId)
+
+    if (!error) {
+      toast.success('Member banned')
+      setMembers((prev) => prev.filter((m) => m.id !== userId))
+    }
+  }
+
+  async function unbanMember(userId: string) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ status: 'approved' })
+      .eq('id', userId)
+
+    if (!error) {
+      toast.success('Member unbanned')
+      setMembers((prev) => prev.filter((m) => m.id !== userId))
+    }
+  }
+
+  async function bulkApprove() {
+    for (const id of selectedIds) {
+      await approveMember(id)
+    }
+    setSelectedIds(new Set())
+  }
+
+  async function bulkReject() {
+    for (const id of selectedIds) {
+      await rejectMember(id)
+    }
+    setSelectedIds(new Set())
+  }
+
+  function toggleSelect(id: string) {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Members</h1>
+        {selectedIds.size > 0 && tab === 'pending' && (
+          <div className="flex gap-2">
+            <Button size="sm" onClick={bulkApprove}>Approve all ({selectedIds.size})</Button>
+            <Button size="sm" variant="destructive" onClick={bulkReject}>Reject all ({selectedIds.size})</Button>
+          </div>
+        )}
+      </div>
+
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="approved">Approved</TabsTrigger>
+          <TabsTrigger value="banned">Banned</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending" className="mt-4">
+          {members.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pending approvals</p>
+          ) : (
+            <div className="space-y-2">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(member.id)}
+                    onChange={() => toggleSelect(member.id)}
+                    className="rounded border-border"
+                  />
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback style={{ backgroundColor: getAvatarColor(member.anonymous_name) }} className="text-white text-xs">
+                      {member.anonymous_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{member.anonymous_name}</p>
+                    <p className="text-xs text-muted-foreground">Joined {getRelativeTime(member.created_at)}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" className="text-success" onClick={() => approveMember(member.id)}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => rejectMember(member.id)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="approved" className="mt-4">
+          {members.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No approved members</p>
+          ) : (
+            <div className="space-y-2">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback style={{ backgroundColor: getAvatarColor(member.anonymous_name) }} className="text-white text-xs">
+                      {member.anonymous_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{member.anonymous_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {member.role === 'admin' && <Badge variant="default" className="mr-1">Admin</Badge>}
+                      Joined {getRelativeTime(member.created_at)}
+                    </p>
+                  </div>
+                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => banMember(member.id)}>
+                    <Ban className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="banned" className="mt-4">
+          {members.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No banned members</p>
+          ) : (
+            <div className="space-y-2">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback style={{ backgroundColor: getAvatarColor(member.anonymous_name) }} className="text-white text-xs">
+                      {member.anonymous_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{member.anonymous_name}</p>
+                    <p className="text-xs text-muted-foreground">Banned</p>
+                  </div>
+                  <Button size="sm" variant="ghost" className="text-success" onClick={() => unbanMember(member.id)}>
+                    Unban
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
