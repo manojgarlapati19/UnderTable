@@ -40,7 +40,7 @@ interface LeftSidebarProps {
 
 interface RoomWithUnread extends Tables<'rooms'> {
   unread_count?: number
-  online_count?: number
+  room_password?: string | null
 }
 
 export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSidebarProps) {
@@ -67,51 +67,38 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
   async function loadProfile() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
     const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single()
-
     if (data) {
       setProfile(data)
-      setGhostMode(data.ghost_mode || false)
+      setGhostMode((data as any).ghost_mode || false)
     }
   }
 
   async function loadRooms() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
     const { data, error } = await supabase
       .from('rooms')
       .select('*')
       .order('name')
-
     if (error) {
       console.error('Failed to load rooms:', error)
       return
     }
-
-    if (data) {
-      setRooms(data)
-    }
+    if (data) setRooms(data as RoomWithUnread[])
   }
 
   async function loadMutedRooms() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
     const { data } = await supabase
       .from('notification_preferences')
       .select('room_id, level')
       .eq('user_id', user.id)
-
     if (data) {
-      const muted = new Set(
-        data.filter((p) => p.level === 'muted').map((p) => p.room_id)
-      )
+      const muted = new Set(data.filter((p) => p.level === 'muted').map((p) => p.room_id))
       setMutedRooms(muted)
     }
   }
@@ -119,13 +106,11 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
   async function toggleGhostMode() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || !profile) return
-
     const newValue = !ghostMode
     const { error } = await supabase
       .from('profiles')
-      .update({ ghost_mode: newValue })
+      .update({ ghost_mode: newValue } as any)
       .eq('id', profile.id)
-
     if (!error) {
       setGhostMode(newValue)
       toast.success(newValue ? 'Ghost mode on — you are now invisible' : 'Ghost mode off')
@@ -135,50 +120,33 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
   async function toggleMuteRoom(roomId: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
     const isMuted = mutedRooms.has(roomId)
     if (isMuted) {
-      const { error } = await supabase
+      await supabase
         .from('notification_preferences')
         .update({ level: 'all' })
         .eq('user_id', user.id)
         .eq('room_id', roomId)
-
-      if (!error) {
-        setMutedRooms((prev) => {
-          const next = new Set(prev)
-          next.delete(roomId)
-          return next
-        })
-        toast.success('Room unmuted')
-      }
+      setMutedRooms((prev) => { const next = new Set(prev); next.delete(roomId); return next })
+      toast.success('Room unmuted')
     } else {
-      const { error } = await supabase
+      await supabase
         .from('notification_preferences')
-        .upsert({
-          user_id: user.id,
-          room_id: roomId,
-          level: 'muted',
-        }, { onConflict: 'user_id, room_id' })
-
-      if (!error) {
-        setMutedRooms((prev) => new Set(prev).add(roomId))
-        toast.success('Room muted')
-      }
+        .upsert({ user_id: user.id, room_id: roomId, level: 'muted' }, { onConflict: 'user_id,room_id' })
+      setMutedRooms((prev) => new Set(prev).add(roomId))
+      toast.success('Room muted')
     }
     setContextMenuRoom(null)
   }
 
   function handleRoomClick(room: RoomWithUnread, e: React.MouseEvent) {
-    if (e.button === 2) {
+    if (e.type === 'contextmenu') {
       e.preventDefault()
       setContextMenuRoom(room.id)
       setContextMenuPos({ x: e.clientX, y: e.clientY })
       return
     }
-
-    // Check if room has password
-    if ((room as any).room_password) {
+    if (room.room_password) {
       const hasAccess = sessionStorage.getItem(`room_access_${room.id}`)
       if (!hasAccess) {
         e.preventDefault()
@@ -189,19 +157,14 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
         return
       }
     }
-
     if (isOpen) onToggle()
   }
 
   function handlePasswordSubmit() {
     if (!passwordRoom) return
-
-    const correctPassword = (passwordRoom as any).room_password
-    if (passwordInput === correctPassword) {
+    if (passwordInput === passwordRoom.room_password) {
       sessionStorage.setItem(`room_access_${passwordRoom.id}`, 'true')
       setShowPasswordGate(false)
-      setPasswordRoom(null)
-      setPasswordInput('')
       router.push(`/chat/${passwordRoom.id}`)
       if (isOpen) onToggle()
     } else {
@@ -209,11 +172,8 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
     }
   }
 
-  // Close context menu on click outside
   useEffect(() => {
-    function handleClick() {
-      setContextMenuRoom(null)
-    }
+    function handleClick() { setContextMenuRoom(null) }
     if (contextMenuRoom) {
       document.addEventListener('click', handleClick)
       return () => document.removeEventListener('click', handleClick)
@@ -227,21 +187,23 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
     <>
       {/* Mobile overlay */}
       {isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-[#1E1B4B]/80 lg:hidden"
-          onClick={onToggle}
-        />
+        <div className="fixed inset-0 z-40 bg-[#1E1B4B]/80 lg:hidden" onClick={onToggle} />
       )}
 
-      {/* Sidebar - 220px room sidebar */}
+      {/* ── KEY FIX: relative on desktop so it participates in flex flow ── */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-[60px] z-50 flex w-[220px] flex-col glass-panel border-r border-[rgba(255,255,255,0.08)] shrink-0 transition-transform duration-300 lg:relative lg:left-0',
+          // Mobile: slide in from left as drawer
+          'fixed inset-y-0 left-[60px] z-50 w-[220px] flex flex-col',
+          'border-r border-[rgba(255,255,255,0.08)]',
+          'bg-[rgba(255,255,255,0.05)] backdrop-blur-[20px]',
+          'transition-transform duration-300',
           isOpen ? 'translate-x-0' : '-translate-x-full',
-          'lg:!translate-x-0'
+          // Desktop: reset to normal flow — NOT fixed anymore
+          'lg:relative lg:inset-auto lg:left-auto lg:z-auto lg:translate-x-0 lg:shrink-0'
         )}
       >
-        {/* "Table Top Tech" Label */}
+        {/* Table Top Tech label */}
         <div className="px-4 pt-4 pb-2">
           <p className="text-[10px] font-medium text-[rgba(255,255,255,0.45)] uppercase tracking-widest">
             Table Top Tech
@@ -250,12 +212,9 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
 
         {/* Identity Card */}
         <div className="px-3 pb-3">
-          <div className="flex items-center gap-3 glass-card rounded-[14px] p-3">
-            <Avatar className="h-8 w-8 ring-2 ring-[#34D399]/30">
-              <AvatarFallback
-                style={{ background: avatarGradient }}
-                className="text-white text-xs"
-              >
+          <div className="flex items-center gap-3 rounded-[14px] bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.1)] p-3">
+            <Avatar className="h-8 w-8 ring-2 ring-[#34D399]/30 shrink-0">
+              <AvatarFallback style={{ background: avatarGradient }} className="text-white text-xs">
                 {initial}
               </AvatarFallback>
             </Avatar>
@@ -271,9 +230,9 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
             <button
               onClick={toggleGhostMode}
               className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-[8px] transition-all duration-150',
+                'flex h-7 w-7 items-center justify-center rounded-[8px] transition-all duration-150 shrink-0',
                 ghostMode
-                  ? 'bg-[rgba(167,139,250,0.2)] text-[#C4B5FD] shadow-glow-sm'
+                  ? 'bg-[rgba(167,139,250,0.2)] text-[#C4B5FD]'
                   : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.1)]'
               )}
               title={ghostMode ? 'Ghost mode active' : 'Enable ghost mode'}
@@ -283,28 +242,35 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
           </div>
         </div>
 
-        <Separator />
+        <Separator className="bg-[rgba(255,255,255,0.08)]" />
 
-        {/* Rooms Header */}
+        {/* Rooms header */}
         <div className="flex items-center justify-between px-4 py-3">
           <span className="text-[11px] font-medium text-[rgba(255,255,255,0.45)] uppercase tracking-wider">
             Rooms
           </span>
-          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-[8px] text-[rgba(255,255,255,0.45)] hover:text-white" asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 rounded-[8px] text-[rgba(255,255,255,0.45)] hover:text-white"
+            asChild
+          >
             <Link href="/admin/rooms">
               <Plus className="h-3.5 w-3.5" />
             </Link>
           </Button>
         </div>
 
-        {/* Rooms List */}
+        {/* Rooms list */}
         <ScrollArea className="flex-1 px-2">
           <div className="space-y-0.5 py-1">
+            {rooms.length === 0 && (
+              <p className="px-3 py-2 text-xs text-[rgba(255,255,255,0.35)]">No rooms yet</p>
+            )}
             {rooms.map((room) => {
-              const currentRoomId = pathname.split('/chat/')[1]
-              const isActive = currentRoomId === room.id || pathname === `/chat/${room.id}`
+              const isActive = pathname === `/chat/${room.id}`
               const isMuted = mutedRooms.has(room.id)
-              const hasPassword = !!(room as any).room_password
+              const hasPassword = !!room.room_password
               return (
                 <div key={room.id} className="relative">
                   <Link
@@ -312,21 +278,20 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
                     onClick={(e) => handleRoomClick(room, e)}
                     onContextMenu={(e) => handleRoomClick(room, e)}
                     className={cn(
-                      'flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm transition-all duration-150',
+                      'flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm transition-all duration-150',
                       isActive
                         ? 'bg-[rgba(255,255,255,0.16)] text-white font-medium'
                         : 'text-[rgba(255,255,255,0.7)] hover:bg-[rgba(255,255,255,0.06)] hover:text-white'
                     )}
                   >
-                    <span className="text-base">{room.icon_emoji}</span>
+                    <span className="text-base shrink-0">{room.icon_emoji || '#'}</span>
                     <span className="flex-1 truncate">{room.name}</span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       {hasPassword && <Lock className="h-3 w-3 text-[#A78BFA]" />}
-                      {room.is_private && !hasPassword && <Lock className="h-3 w-3 text-[rgba(255,255,255,0.45)]" />}
-                      {room.is_confession_box && <Flame className="h-3 w-3 text-orange-500" />}
-                      {isMuted && <BellOff className="h-3 w-3 text-[rgba(255,255,255,0.45)]" />}
+                      {room.is_confession_box && <Flame className="h-3 w-3 text-orange-400" />}
+                      {isMuted && <BellOff className="h-3 w-3 text-[rgba(255,255,255,0.35)]" />}
                       {!isMuted && room.unread_count ? (
-                        <Badge variant="default" className="h-5 min-w-5 px-1 text-[10px]">
+                        <Badge className="h-4 min-w-4 px-1 text-[10px] bg-[#7C3AED]">
                           {room.unread_count}
                         </Badge>
                       ) : null}
@@ -338,49 +303,47 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
           </div>
         </ScrollArea>
 
-        {/* Context menu for mute */}
+        {/* Context menu */}
         {contextMenuRoom && (
           <div
-            className="fixed z-[100] rounded-[12px] border border-[rgba(255,255,255,0.12)] bg-[rgba(30,27,75,0.98)] backdrop-blur-[28px] shadow-2xl overflow-hidden py-1"
+            className="fixed z-[100] rounded-[12px] border border-[rgba(255,255,255,0.12)] bg-[rgba(30,27,75,0.98)] backdrop-blur-[28px] shadow-2xl py-1"
             style={{ left: contextMenuPos.x, top: contextMenuPos.y }}
           >
             <button
               onClick={() => toggleMuteRoom(contextMenuRoom)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[rgba(255,255,255,0.7)] hover:bg-[rgba(255,255,255,0.06)] hover:text-white transition-colors duration-100"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[rgba(255,255,255,0.7)] hover:bg-[rgba(255,255,255,0.06)] hover:text-white"
             >
-              {mutedRooms.has(contextMenuRoom) ? (
-                <><Bell className="h-4 w-4" /> Unmute room</>
-              ) : (
-                <><BellOff className="h-4 w-4" /> Mute room</>
-              )}
+              {mutedRooms.has(contextMenuRoom)
+                ? <><Bell className="h-4 w-4" /> Unmute room</>
+                : <><BellOff className="h-4 w-4" /> Mute room</>
+              }
             </button>
           </div>
         )}
 
-        {/* Bottom section */}
-        <div className="px-3 py-3 space-y-2">
+        {/* Bottom */}
+        <div className="px-3 py-3 space-y-1 border-t border-[rgba(255,255,255,0.08)]">
           <button
             onClick={onOpenSettings}
             className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.06)] hover:text-white transition-all duration-150"
-            title="Settings"
           >
             <Settings className="h-4 w-4" />
             <span>Settings</span>
           </button>
-          <p className="text-[10px] text-[rgba(255,255,255,0.35)] text-center">
+          <p className="text-[10px] text-[rgba(255,255,255,0.25)] text-center pt-1">
             What happens UnderTable, stays UnderTable.
           </p>
         </div>
       </aside>
 
-      {/* Password gate dialog */}
-      <Dialog open={showPasswordGate} onOpenChange={(open) => { if (!open) { setShowPasswordGate(false); setPasswordRoom(null); setPasswordInput(''); setPasswordError('') } }}>
+      {/* Password gate */}
+      <Dialog open={showPasswordGate} onOpenChange={(open) => {
+        if (!open) { setShowPasswordGate(false); setPasswordRoom(null); setPasswordInput(''); setPasswordError('') }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>🔒 This room is password protected</DialogTitle>
-            <DialogDescription>
-              Enter the passcode to access {passwordRoom?.name}
-            </DialogDescription>
+            <DialogDescription>Enter the passcode to access #{passwordRoom?.name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <Input
@@ -392,16 +355,12 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
               autoFocus
               className={cn(passwordError && 'border-red-500')}
             />
-            {passwordError && (
-              <p className="text-xs text-red-400">{passwordError}</p>
-            )}
+            {passwordError && <p className="text-xs text-red-400">{passwordError}</p>}
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => { setShowPasswordGate(false); setPasswordRoom(null) }}>
                 Cancel
               </Button>
-              <Button onClick={handlePasswordSubmit}>
-                Enter Room
-              </Button>
+              <Button onClick={handlePasswordSubmit}>Enter Room</Button>
             </div>
           </div>
         </DialogContent>
