@@ -117,7 +117,7 @@ export default function ReactionLeaderboard() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
         <Trophy className="h-8 w-8 text-[#56566E] mb-2" />
-        <p className="text-sm text-[#56566E]">No leaderboard data this week</p>
+        <p className="text-sm text-[rgba(255,255,255,0.45)]">No leaderboard data this week</p>
       </div>
     )
   }
@@ -136,8 +136,8 @@ export default function ReactionLeaderboard() {
             <div
               key={entry.user_id}
               className={cn(
-                'flex items-center gap-3 rounded-[12px] px-3 py-2 transition-colors duration-150',
-                entry.rank <= 3 ? 'bg-yellow-500/5' : 'hover:bg-[#13131F]'
+            'flex items-center gap-3 rounded-[12px] px-3 py-2 transition-colors duration-150',
+            entry.rank <= 3 ? 'bg-yellow-500/10' : 'hover:bg-[rgba(255,255,255,0.05)]'
               )}
             >
               <span className={cn(

@@ -70,7 +70,7 @@ export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPick
           <ScrollArea className="h-[400px]">
             {loading ? (
               <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-[#56566E]" />
+                <Loader2 className="h-8 w-8 animate-spin text-[rgba(255,255,255,0.45)]" />
               </div>
             ) : gifs.length > 0 ? (
               <div className="grid grid-cols-2 gap-2">
@@ -78,7 +78,7 @@ export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPick
                   <button
                     key={gif.id}
                     onClick={() => handleSelect(gif.media_formats?.gif?.url || gif.url)}
-                    className="rounded-[12px] overflow-hidden border border-[#22223A] hover:border-accent transition-colors duration-150"
+                    className="rounded-[12px] overflow-hidden border border-[rgba(255,255,255,0.12)] hover:border-[#C4B5FD] transition-colors duration-150"
                   >
                     <img
                       src={gif.media_formats?.tinygif?.url || gif.media_formats?.gif?.url}

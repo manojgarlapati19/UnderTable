@@ -14,9 +14,8 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { RefreshCw, Eye, EyeOff, UserX, UserCheck } from 'lucide-react'
+import { RefreshCw, UserX, UserCheck } from 'lucide-react'
 import type { Tables } from '@/lib/supabase/database.types'
 
 interface SettingsModalProps {
@@ -163,7 +162,7 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
           </TabsList>
 
           <TabsContent value="notifications" className="space-y-3 max-h-80 overflow-y-auto">
-            <p className="text-sm text-[#56566E]">
+            <p className="text-sm text-[rgba(255,255,255,0.45)]">
               Configure notification levels for each room
             </p>
             {rooms.map((room) => (
@@ -190,21 +189,21 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
           </TabsContent>
 
           <TabsContent value="identity" className="space-y-4">
-            <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+            <div className="glass-card rounded-[14px] p-4">
               <h3 className="text-sm font-medium text-white mb-2">Current Identity</h3>
-              <p className="text-lg font-semibold text-accent">{profile?.anonymous_name}</p>
+              <p className="text-lg font-semibold text-[#A78BFA]">{profile?.anonymous_name}</p>
             </div>
 
             <Separator />
 
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-white">Reset Identity</h3>
-              <p className="text-xs text-[#56566E]">
+              <p className="text-xs text-[rgba(255,255,255,0.45)]">
                 Get a new anonymous name. Your past messages will retain your old name.
                 You can only reset once every 30 days.
               </p>
               {identityCooldown > 0 ? (
-                <div className="flex items-center gap-2 text-sm text-[#56566E]">
+                <div className="flex items-center gap-2 text-sm text-[rgba(255,255,255,0.45)]">
                   <RefreshCw className="h-4 w-4" />
                   <span>You can reset your identity in {identityCooldown} days</span>
                 </div>
@@ -223,7 +222,7 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <p className="text-sm text-white">Hide my presence</p>
-                  <p className="text-xs text-[#56566E]">
+                  <p className="text-xs text-[rgba(255,255,255,0.45)]">
                     Your presence, read receipts, and typing indicator will be hidden
                   </p>
                 </div>
@@ -244,15 +243,15 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
 
           <TabsContent value="blocks" className="space-y-3">
             {blocks.length === 0 ? (
-              <div className="text-center py-8 text-sm text-[#56566E]">
-                <UserX className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <div className="text-center py-8 text-sm text-[rgba(255,255,255,0.45)]">
+                <UserX className="h-8 w-8 mx-auto mb-2 opacity-50 text-[rgba(255,255,255,0.45)]" />
                 <p>No blocked users</p>
               </div>
             ) : (
               blocks.map((block) => (
                 <div key={block.id} className="flex items-center justify-between py-2">
                   <div className="flex items-center gap-2">
-                    <UserX className="h-4 w-4 text-[#56566E]" />
+                    <UserX className="h-4 w-4 text-[rgba(255,255,255,0.45)]" />
                     <span className="text-sm text-white">
                       {blockedProfiles.get(block.blocked_id) || 'Unknown user'}
                     </span>

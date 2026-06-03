@@ -27,7 +27,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {cards.map((card) => (
-        <div key={card.value} className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4 hover:border-accent/30 transition-all duration-150">
+        <div key={card.value} className="glass-card rounded-[14px] p-4 hover:border-[rgba(255,255,255,0.2)] transition-all duration-150">
           <div className="flex items-center gap-3">
             <div className={cn('rounded-[12px] p-2', card.color)}>
               <card.icon className="h-4 w-4" />
@@ -36,7 +36,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
               <p className="text-2xl font-bold text-white">
                 {stats[card.value]}
               </p>
-              <p className="text-[10px] text-[#56566E]">{card.label}</p>
+              <p className="text-[10px] text-[rgba(255,255,255,0.45)]">{card.label}</p>
             </div>
           </div>
         </div>

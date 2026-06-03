@@ -91,15 +91,15 @@ export default function AdminDashboardPage() {
       <StatsCards stats={stats} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[16px]">
+        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[14px]">
           <Link2 className="h-5 w-5" />
           <span className="text-xs">Generate Invite Link</span>
         </Button>
-        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[16px]">
+        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[14px]">
           <Plus className="h-5 w-5" />
           <span className="text-xs">Create Room</span>
         </Button>
-        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[16px]">
+        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[14px]">
           <Shield className="h-5 w-5" />
           <span className="text-xs">Maintenance Mode</span>
         </Button>

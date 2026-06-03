@@ -67,7 +67,7 @@ export default function BookmarksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0E0E1A]">
+    <div className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
@@ -78,19 +78,19 @@ export default function BookmarksPage() {
           </Button>
           <div>
             <h1 className="text-[26px] font-medium text-white">Bookmarks</h1>
-            <p className="text-sm text-[#8888A0]">Your saved messages</p>
+            <p className="text-sm text-[rgba(255,255,255,0.7)]">Your saved messages</p>
           </div>
         </div>
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-accent" />
+            <Loader2 className="h-6 w-6 animate-spin text-[#A78BFA]" />
           </div>
         ) : bookmarks.length === 0 ? (
           <div className="text-center py-12">
-            <Bookmark className="h-12 w-12 text-[#56566E] mx-auto mb-4 opacity-50" />
+            <Bookmark className="h-12 w-12 text-[rgba(255,255,255,0.45)] mx-auto mb-4 opacity-50" />
             <h3 className="text-lg font-medium text-white mb-1">No bookmarks yet</h3>
-            <p className="text-sm text-[#56566E]">
+            <p className="text-sm text-[rgba(255,255,255,0.45)]">
               Hover over a message and click the bookmark icon to save it here
             </p>
           </div>
@@ -99,7 +99,7 @@ export default function BookmarksPage() {
             {bookmarks.map((bookmark) => (
               <div
                 key={bookmark.id}
-                className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4 hover:border-accent/50 transition-all duration-150"
+                className="glass-card rounded-[14px] p-4 hover:border-[rgba(255,255,255,0.2)] transition-all duration-150"
               >
                 <div className="flex items-start justify-between gap-4">
                   <Link
@@ -110,7 +110,7 @@ export default function BookmarksPage() {
                       <Badge variant="secondary" className="text-[10px]">
                         {bookmark.messages.rooms.icon_emoji} {bookmark.messages.rooms.name}
                       </Badge>
-                      <span className="text-[10px] text-[#56566E]">
+                      <span className="text-[10px] text-[rgba(255,255,255,0.45)]">
                         {getRelativeTime(bookmark.messages.created_at)}
                       </span>
                     </div>

@@ -64,7 +64,7 @@ export default function AdminFiltersPage() {
   const testHighlights = testMessage ? getHighlightedKeywords(testMessage, keywordList) : []
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-[#A78BFA]" /></div>
   }
 
   return (
@@ -73,7 +73,7 @@ export default function AdminFiltersPage() {
 
       <div className="space-y-3">
         <Label>Current Blocklist</Label>
-        <div className="flex flex-wrap gap-2 p-4 rounded-[16px] border border-[#22223A] bg-[#13131F] min-h-10">
+        <div className="flex flex-wrap gap-2 p-4 glass-card rounded-[14px] min-h-10">
           {keywords.length === 0 ? (
             <p className="text-sm text-[#56566E]">No keywords added yet</p>
           ) : (
@@ -105,7 +105,7 @@ export default function AdminFiltersPage() {
         </Button>
       </div>
 
-      <div className="space-y-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+      <div className="space-y-3 glass-card rounded-[14px] p-4">
         <div className="flex items-center gap-2">
           <Search className="h-4 w-4 text-[#56566E]" />
           <Label>Test a Message</Label>

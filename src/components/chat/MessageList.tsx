@@ -251,11 +251,11 @@ export default function MessageList({
         {/* Empty state */}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[16px] bg-accent-gradient shadow-lg shadow-purple-500/20 mb-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-[17px] bg-primary-gradient shadow-glow-sm mb-4">
               <span className="text-2xl">👻</span>
             </div>
             <h3 className="text-lg font-medium text-white mb-1">No messages yet</h3>
-            <p className="text-sm text-[#56566E] max-w-xs">
+            <p className="text-sm text-[rgba(255,255,255,0.45)] max-w-xs">
               Be the first to send a message in this room
             </p>
           </div>
@@ -263,7 +263,7 @@ export default function MessageList({
 
         {/* Confession box notice */}
         {isConfessionBox && (
-          <div className="px-4 py-3 bg-orange-500/5 border-b border-orange-500/10">
+          <div className="px-4 py-3 bg-orange-500/5 border-b border-orange-500/20">
             <p className="text-xs text-orange-400 text-center">
               🔥 This room has no memory. Messages auto-delete after 1 hour.
             </p>
@@ -315,7 +315,7 @@ export default function MessageList({
       {hasNewMessages && (
         <Button
           onClick={scrollToBottom}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 shadow-xl animate-slide-up bg-[#13131F] border border-[#22223A] text-white hover:bg-[#1A1530]"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 shadow-xl animate-slide-up glass-card text-white hover:bg-[rgba(255,255,255,0.14)]"
           size="sm"
         >
           <ArrowDown className="h-4 w-4 mr-1" />

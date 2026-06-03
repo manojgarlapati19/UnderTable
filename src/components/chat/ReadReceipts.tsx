@@ -87,7 +87,7 @@ export default function ReadReceipts({ messageId, maxVisible = 5 }: ReadReceipts
               <Avatar
                 key={reader.user_id}
                 className={cn(
-                  'h-4 w-4 border-2 border-[#0E0E1A]',
+                  'h-4 w-4 border-2 border-transparent',
                   i > 0 && '-ml-1.5'
                 )}
               >
@@ -100,7 +100,7 @@ export default function ReadReceipts({ messageId, maxVisible = 5 }: ReadReceipts
               </Avatar>
             ))}
             {extra > 0 && (
-              <span className="text-[10px] text-[#56566E] ml-1">+{extra} more</span>
+              <span className="text-[10px] text-[rgba(255,255,255,0.45)] ml-1">+{extra} more</span>
             )}
           </div>
         </TooltipTrigger>

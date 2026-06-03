@@ -108,7 +108,7 @@ export default function AdminReportsPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-[#A78BFA]" /></div>
   }
 
   return (
@@ -124,11 +124,11 @@ export default function AdminReportsPage() {
 
         <TabsContent value={tab} className="mt-4">
           {reports.length === 0 ? (
-            <p className="text-sm text-[#56566E]">No reports to review</p>
+            <p className="text-sm text-[rgba(255,255,255,0.45)]">No reports to review</p>
           ) : (
             <div className="space-y-3">
               {reports.map((report) => (
-                <div key={report.id} className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+                <div key={report.id} className="glass-card rounded-[14px] p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Badge variant={report.messages.is_flagged ? 'warning' : 'destructive'}>
@@ -143,7 +143,7 @@ export default function AdminReportsPage() {
                     </Badge>
                   </div>
 
-                  <p className="text-sm text-white bg-[#0B0B14] rounded-[12px] p-2 mb-2 border border-[#18182A]">
+                  <p className="text-sm text-white bg-[rgba(255,255,255,0.03)] rounded-[13px] p-2 mb-2 border border-[rgba(255,255,255,0.08)]">
                     {report.messages.content}
                   </p>
 

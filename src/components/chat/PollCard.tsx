@@ -99,7 +99,7 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
   }))
 
   return (
-    <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4 space-y-3">
+    <div className="glass-card rounded-[14px] p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-medium text-white">{poll.question}</h3>
         {isClosed && (
@@ -113,7 +113,7 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
             <button
               key={option.id}
               onClick={() => handleVote(option.id)}
-              className="w-full text-left rounded-[12px] border border-[#22223A] px-3 py-2 text-sm text-white transition-all duration-150 hover:border-accent hover:bg-[#1A1530]"
+              className="w-full text-left rounded-[12px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] backdrop-blur-[20px] px-3 py-2 text-sm text-white transition-all duration-150 hover:border-[#C4B5FD] hover:bg-[rgba(255,255,255,0.1)]"
             >
               {option.text}
             </button>
@@ -131,7 +131,7 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
                   tick={{ fontSize: 11, fill: isDark ? '#8888A0' : '#64748B' }}
                   width={80}
                 />
-                <Bar dataKey="votes" fill="#7C3AED" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="votes" fill="#A78BFA" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -141,7 +141,7 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
               <div key={option.id} className="flex items-center justify-between text-sm">
                 <span className="text-white">{option.text}</span>
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-24 rounded-full bg-[#18182A] overflow-hidden">
+                  <div className="h-2 w-24 rounded-full bg-[rgba(255,255,255,0.08)] overflow-hidden">
                     <div
                       className="h-full rounded-full bg-accent transition-all duration-300"
                       style={{

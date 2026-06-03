@@ -83,7 +83,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0E0E1A]">
+    <div className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -108,27 +108,27 @@ export default function SearchPage() {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-accent" />
+            <Loader2 className="h-6 w-6 animate-spin text-[#A78BFA]" />
           </div>
         ) : searched && results.length === 0 ? (
           <div className="text-center py-12">
-            <Search className="h-12 w-12 text-[#56566E] mx-auto mb-4 opacity-50" />
+            <Search className="h-12 w-12 text-[rgba(255,255,255,0.45)] mx-auto mb-4 opacity-50" />
             <h3 className="text-lg font-medium text-white mb-1">No results found</h3>
-            <p className="text-sm text-[#56566E]">
+            <p className="text-sm text-[rgba(255,255,255,0.45)]">
               No messages match your search query
             </p>
           </div>
         ) : !searched ? (
           <div className="text-center py-12">
-            <Search className="h-12 w-12 text-[#56566E] mx-auto mb-4 opacity-50" />
+            <Search className="h-12 w-12 text-[rgba(255,255,255,0.45)] mx-auto mb-4 opacity-50" />
             <h3 className="text-lg font-medium text-white mb-1">Search messages</h3>
-            <p className="text-sm text-[#56566E]">
+            <p className="text-sm text-[rgba(255,255,255,0.45)]">
               Type to search across all rooms
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-[#56566E] mb-4">
+            <p className="text-sm text-[rgba(255,255,255,0.45)] mb-4">
               {results.length} result{results.length !== 1 ? 's' : ''}
             </p>
 
@@ -154,7 +154,7 @@ export default function SearchPage() {
                   <Link
                     key={result.id}
                     href={`/chat/${result.room_id}#msg-${result.id}`}
-                    className="block rounded-[16px] border border-[#22223A] bg-[#13131F] p-3 hover:border-accent/50 transition-all duration-150"
+                    className="block glass-card rounded-[14px] p-3 hover:border-[rgba(255,255,255,0.2)] transition-all duration-150"
                   >
                     <p className="text-sm text-white line-clamp-3 mb-1">
                       {highlightText(result.content, query)}

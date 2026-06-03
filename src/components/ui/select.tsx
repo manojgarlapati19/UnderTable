@@ -16,14 +16,14 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex h-9 w-full items-center justify-between rounded-[12px] border border-[#22223A] bg-[#13131F] px-3 py-2 text-sm text-white shadow-sm transition-all duration-150 placeholder:text-[#4A4A60] focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent disabled:cursor-not-allowed disabled:opacity-50',
+      'flex h-9 w-full items-center justify-between rounded-[13px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] backdrop-blur-[20px] px-3 py-2 text-sm text-white shadow-sm transition-all duration-150 placeholder:text-[rgba(255,255,255,0.35)] focus:outline-none focus:ring-2 focus:ring-[#A78BFA] focus:border-[#C4B5FD] disabled:cursor-not-allowed disabled:opacity-50',
       className
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 text-[#56566E]" />
+      <ChevronDown className="h-4 w-4 text-[rgba(255,255,255,0.45)]" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))
@@ -37,7 +37,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-[12px] border border-[#22223A] bg-[#13131F] shadow-xl animate-fade-in',
+        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-[13px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.1)] backdrop-blur-[28px] shadow-xl animate-fade-in',
         position === 'popper' && 'translate-y-1',
         className
       )}
@@ -59,7 +59,7 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex w-full cursor-default select-none items-center rounded-[8px] py-1.5 pl-2 pr-8 text-sm text-white outline-none focus:bg-[#1A1530] focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex w-full cursor-default select-none items-center rounded-[8px] py-1.5 pl-2 pr-8 text-sm text-white outline-none focus:bg-[rgba(255,255,255,0.1)] focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className
     )}
     {...props}

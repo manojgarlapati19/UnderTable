@@ -104,7 +104,7 @@ export default function HotTopicsFeed() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
         <Flame className="h-8 w-8 text-[#56566E] mb-2" />
-        <p className="text-sm text-[#56566E]">No hot topics in the last 24 hours</p>
+        <p className="text-sm text-[rgba(255,255,255,0.45)]">No hot topics in the last 24 hours</p>
       </div>
     )
   }
@@ -122,24 +122,24 @@ export default function HotTopicsFeed() {
             <a
               key={topic.message_id}
               href={`/chat/${topic.room_id}#msg-${topic.message_id}`}
-              className="block rounded-[16px] border border-[#22223A] bg-[#13131F] p-3 hover:border-accent/50 transition-all duration-150 group"
+              
             >
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="secondary" className="text-[10px]">
                   #{index + 1}
                 </Badge>
-                <span className="text-xs text-[#56566E]">
+                <span className="text-xs text-[rgba(255,255,255,0.45)]">
                   {topic.room_emoji} {topic.room_name}
                 </span>
                 <span className="text-[10px] text-[#56566E] ml-auto">
                   {getRelativeTime(topic.created_at)}
                 </span>
               </div>
-              <p className="text-sm text-white line-clamp-2 group-hover:text-accent transition-colors duration-150">
+              <p className="text-sm text-white line-clamp-2 group-hover:text-[#A78BFA] transition-colors duration-150">
                 {topic.content}
               </p>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-[#56566E]">
+                <span className="text-xs text-[rgba(255,255,255,0.45)]">
                   🔥 {topic.reaction_count} reactions
                 </span>
                 <span className="text-xs">{topic.top_reactions.join(' ')}</span>

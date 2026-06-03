@@ -108,11 +108,11 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
   const roomUsers = visibleUsers.filter((u) => u.current_room === currentRoomId)
 
   return (
-    <aside className="hidden xl:flex w-[200px] flex-col bg-[#0B0B14] border-l border-[#18182A]">
+    <aside className="hidden xl:flex w-[200px] flex-col glass-panel border-l border-[rgba(255,255,255,0.08)]">
       {/* Online now header */}
-      <div className="px-4 py-3 border-b border-[#18182A]">
+      <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-[#22C55E]" />
+          <div className="h-2 w-2 rounded-full bg-[#34D399]" />
           <span className="text-sm font-medium text-white">Online Now</span>
           <Badge variant="secondary" className="ml-auto text-[10px]">
             {visibleUsers.length}
@@ -124,7 +124,7 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
         <div className="p-3 space-y-3">
           {visibleUsers.length > 0 ? (
             <div className="space-y-1">
-              <p className="text-[10px] font-medium text-[#56566E] uppercase tracking-wider">Online</p>
+              <p className="text-[10px] font-medium text-[rgba(255,255,255,0.45)] uppercase tracking-wider">Online</p>
               {visibleUsers.map((user) => {
                 const color = getAvatarColor(user.anonymous_name)
                 return (
@@ -137,8 +137,8 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
                       </Avatar>
                       <div
                         className={cn(
-                          'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0B0B14]',
-                          user.is_idle ? 'bg-[#F59E0B]' : 'bg-[#22C55E]'
+                          'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[rgba(255,255,255,0.05)]',
+                          user.is_idle ? 'bg-[#F59E0B]' : 'bg-[#34D399]'
                         )}
                       />
                     </div>
@@ -149,24 +149,24 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-xs text-[#56566E]">No one is online</p>
+              <p className="text-xs text-[rgba(255,255,255,0.45)]">No one is online</p>
             </div>
           )}
 
           {ghostUsers.length > 0 && (
             <div className="space-y-1">
-              <p className="text-[10px] font-medium text-[#56566E] uppercase tracking-wider">Incognito</p>
+              <p className="text-[10px] font-medium text-[rgba(255,255,255,0.45)] uppercase tracking-wider">Incognito</p>
               {ghostUsers.map((user) => (
                 <div key={user.user_id} className="flex items-center gap-2.5 rounded-[11px] px-2 py-1.5 hover:bg-[#13131F] transition-colors duration-150">
                   <div className="relative">
                     <Avatar className="h-7 w-7">
-                      <AvatarFallback className="bg-[#13131F] text-[#56566E]">
+                      <AvatarFallback className="bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.45)]">
                         <Ghost className="h-3.5 w-3.5" />
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#4A4A60] border-2 border-[#0B0B14]" />
+                    <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[rgba(255,255,255,0.35)] border-2 border-[rgba(255,255,255,0.05)]" />
                   </div>
-                  <span className="text-xs text-[#56566E]">Someone</span>
+                  <span className="text-xs text-[rgba(255,255,255,0.45)]">Someone</span>
                 </div>
               ))}
             </div>
@@ -174,9 +174,9 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
 
           {currentRoomId && roomUsers.length > 0 && (
             <>
-              <hr className="border-[#18182A]" />
+              <hr className="border-[rgba(255,255,255,0.08)]" />
               <div className="space-y-1">
-                <p className="text-[10px] font-medium text-[#56566E] uppercase tracking-wider">In this room</p>
+                <p className="text-[10px] font-medium text-[rgba(255,255,255,0.45)] uppercase tracking-wider">In this room</p>
                 {roomUsers.map((user) => {
                   const color = getAvatarColor(user.anonymous_name)
                   return (

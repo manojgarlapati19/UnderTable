@@ -119,11 +119,10 @@ export default function PollCreateModal({ open, onOpenChange, roomId }: PollCrea
                     onChange={(e) => updateOption(option.id, e.target.value)}
                     placeholder={`Option ${index + 1}`}
                   />
-                  {options.length > 2 && (
-                    <Button
+                  {options.length > 2 && (                          <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 shrink-0 text-red-400 hover:text-red-300"
+                      className="h-8 w-8 shrink-0 text-red-400 hover:text-red-300 hover:bg-red-500/20"
                       onClick={() => removeOption(option.id)}
                     >
                       <Trash2 className="h-4 w-4" />

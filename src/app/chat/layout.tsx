@@ -49,7 +49,7 @@ export default function ChatLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0E0E1A]">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
       </div>
     )
@@ -57,7 +57,7 @@ export default function ChatLayout({
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen w-screen overflow-hidden bg-[#0E0E1A]">
+      <div className="flex h-screen w-screen overflow-hidden">
         {/* Mobile hamburger */}
         <Button
           variant="ghost"
@@ -79,7 +79,7 @@ export default function ChatLayout({
         />
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-w-0 bg-[#0E0E1A]">
+        <main className="flex-1 flex flex-col min-w-0 glass-chat">
           {children}
         </main>
 

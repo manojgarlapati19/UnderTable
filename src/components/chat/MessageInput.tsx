@@ -116,8 +116,8 @@ export default function MessageInput({
 
   if (isReadonly) {
     return (
-      <div className="border-t border-[#18182A] p-4 bg-[#0E0E1A]">
-        <div className="rounded-[16px] bg-[#13131F] p-3 text-center text-sm text-[#56566E] border border-[#22223A]">
+      <div className="border-t border-[rgba(255,255,255,0.08)] p-4">
+        <div className="glass-card rounded-[14px] p-3 text-center text-sm text-[rgba(255,255,255,0.45)]">
           UnderTable is currently in read-only mode. Check back soon!
         </div>
       </div>
@@ -125,7 +125,7 @@ export default function MessageInput({
   }
 
   return (
-    <div className="border-t border-[#18182A] bg-[#0E0E1A]">
+    <div className="border-t border-[rgba(255,255,255,0.08)]">
       {/* Reply preview */}
       {replyTo && (
         <ReplyPreview
@@ -137,18 +137,18 @@ export default function MessageInput({
 
       {/* Slow mode indicator */}
       {slowModeTimer > 0 && (
-        <div className="px-4 py-1.5 text-xs text-[#56566E] text-center bg-[#13131F]">
+        <div className="px-4 py-1.5 text-xs text-[rgba(255,255,255,0.45)] text-center bg-[rgba(255,255,255,0.05)]">
           You can send again in {slowModeTimer}s
         </div>
       )}
 
       <div className="flex items-end gap-2 p-3">
         {/* Composer box */}
-        <div className="flex-1 flex items-end gap-2 rounded-[16px] border border-[#22223A] bg-[#13131F] px-3 py-2 transition-all duration-150 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/30">
+        <div className="flex-1 flex items-end gap-2 rounded-[14px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.1)] backdrop-blur-[20px] px-3 py-2 transition-all duration-150 focus-within:border-[#C4B5FD] focus-within:ring-1 focus-within:ring-[#C4B5FD]/30">
           {/* Action buttons */}
           <div className="flex items-center gap-1 pb-1">
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[#56566E] hover:bg-[#1A1530] hover:text-accent transition-all duration-150"
+              className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.1)] hover:text-[#A78BFA] transition-all duration-150"
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               title="Add emoji"
             >
@@ -157,14 +157,14 @@ export default function MessageInput({
             {!isConfessionBox && (
               <>
                 <button
-                  className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[#56566E] hover:bg-[#1A1530] hover:text-accent transition-all duration-150"
+                  className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.1)] hover:text-[#A78BFA] transition-all duration-150"
                   onClick={onOpenGif}
                   title="Add GIF"
                 >
                   <Image className="h-4 w-4" />
                 </button>
                 <button
-                  className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[#56566E] hover:bg-[#1A1530] hover:text-accent transition-all duration-150"
+                  className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.1)] hover:text-[#A78BFA] transition-all duration-150"
                   onClick={onOpenPoll}
                   title="Create poll"
                 >
@@ -185,7 +185,7 @@ export default function MessageInput({
             onKeyDown={handleKeyDown}
             placeholder={`Message as ${profileName}...`}
             disabled={slowModeTimer > 0}
-            className="flex-1 resize-none bg-transparent px-1 py-1 text-sm text-white outline-none placeholder:text-[#4A4A60] disabled:opacity-50"
+            className="flex-1 resize-none bg-transparent px-1 py-1 text-sm text-white outline-none placeholder:text-[rgba(255,255,255,0.35)] disabled:opacity-50"
             rows={1}
           />
 
@@ -196,8 +196,8 @@ export default function MessageInput({
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-full transition-all duration-150 shrink-0',
               content.trim() && !isSending && slowModeTimer === 0
-                ? 'bg-accent-gradient text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50'
-                : 'bg-[#22223A] text-[#56566E]'
+                ? 'bg-primary-gradient text-[#2E1065] shadow-glow-sm hover:shadow-glow'
+                : 'bg-[rgba(255,255,255,0.1)] text-[rgba(255,255,255,0.45)]'
             )}
           >
             <Send className="h-4 w-4" />
@@ -208,7 +208,7 @@ export default function MessageInput({
       {/* Emoji picker popover */}
       {showEmojiPicker && (
         <div className="absolute bottom-full left-4 mb-2 z-50">
-          <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] shadow-xl p-2">
+          <div className="rounded-[14px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.1)] backdrop-blur-[28px] shadow-xl p-2">
             <div className="grid grid-cols-8 gap-1">
               {['👍', '❤️', '😂', '🔥', '😮', '🎉', '🙏', '💯',
                 '✨', '🚀', '👀', '💪', '🤔', '😅', '🥳', '👏',
@@ -216,7 +216,7 @@ export default function MessageInput({
                 <button
                   key={emoji}
                   onClick={() => insertEmoji(emoji)}
-                  className="h-8 w-8 flex items-center justify-center rounded-[8px] hover:bg-[#1A1530] transition-colors duration-150 text-lg"
+                  className="h-8 w-8 flex items-center justify-center rounded-[8px] hover:bg-[rgba(255,255,255,0.1)] transition-colors duration-150 text-lg"
                 >
                   {emoji}
                 </button>

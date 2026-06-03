@@ -57,26 +57,26 @@ export default function PendingPage() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-auth-bg">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#A78BFA]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-auth-bg">
-      <div className="text-center max-w-sm px-4">
-        <div className="inline-flex h-20 w-20 items-center justify-center rounded-[16px] ghost-glow mb-6">
-          <span className="text-3xl font-bold text-white">U</span>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="text-center max-w-sm glass-auth p-8 shadow-2xl">
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-[17px] ghost-glow mb-6">
+          <span className="text-3xl font-bold text-[#2E1065]">U</span>
         </div>
         <h1 className="text-[26px] font-medium text-white mb-2">
           You&apos;re on the list!
         </h1>
-        <p className="text-[#8888A0] mb-6">
+        <p className="text-[rgba(255,255,255,0.7)] mb-6">
           An admin will approve your account shortly. Please check back soon.
         </p>
-        <div className="flex items-center justify-center gap-2 text-sm text-[#56566E]">
-          <Loader2 className="h-4 w-4 animate-spin text-accent" />
+        <div className="flex items-center justify-center gap-2 text-sm text-[rgba(255,255,255,0.45)]">
+          <Loader2 className="h-4 w-4 animate-spin text-[#A78BFA]" />
           Waiting for approval...
         </div>
       </div>

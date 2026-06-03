@@ -88,7 +88,7 @@ export default function AdminStartersPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-[#A78BFA]" /></div>
   }
 
   const unposted = starters.filter((s) => !s.posted_at)
@@ -119,11 +119,11 @@ export default function AdminStartersPage() {
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-white">Ready to Post ({unposted.length})</h3>
         {unposted.length === 0 ? (
-          <p className="text-sm text-[#56566E]">All starters have been posted</p>
+          <p className="text-sm text-[rgba(255,255,255,0.45)]">All starters have been posted</p>
         ) : (
           <div className="space-y-2">
             {unposted.map((starter) => (
-              <div key={starter.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+              <div key={starter.id} className="flex items-center gap-3 glass-card rounded-[14px] p-3">
                 <p className="flex-1 text-sm text-white">{starter.question}</p>
                 <div className="flex gap-1">
                   <Button size="sm" variant="outline" onClick={() => postNow(starter.question, starter.id)}>

@@ -37,8 +37,8 @@ export default function ReactionPill({
             className={cn(
               'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-all duration-150 hover:scale-110',
               hasReacted
-                ? 'border-accent bg-[#1A1530] text-[#C4B5FD]'
-                : 'border-[#22223A] bg-[#13131F] text-[#56566E] hover:bg-[#1A1530] hover:text-white'
+                ? 'border-[#C4B5FD] bg-[rgba(196,181,253,0.25)] text-[#DDD6FE]'
+                : 'border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] backdrop-blur-[20px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white'
             )}
           >
             <span>{emoji}</span>

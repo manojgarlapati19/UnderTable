@@ -77,7 +77,7 @@ export default function AdminInvitesPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-[#A78BFA]" /></div>
   }
 
   return (
@@ -89,11 +89,11 @@ export default function AdminInvitesPage() {
         </Button>
       </div>
 
-      <div className="rounded-[16px] border border-[#22223A] overflow-hidden">
+      <div className="glass-card rounded-[14px] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#22223A] bg-[#0B0B14]">
+              <tr className="border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)]">
                 <th className="text-left px-4 py-2 font-medium text-[#56566E]">Code</th>
                 <th className="text-left px-4 py-2 font-medium text-[#56566E]">Created</th>
                 <th className="text-left px-4 py-2 font-medium text-[#56566E]">Uses</th>
@@ -103,11 +103,11 @@ export default function AdminInvitesPage() {
             </thead>
             <tbody>
               {invites.map((invite) => (
-                <tr key={invite.id} className="border-b border-[#18182A] hover:bg-[#0B0B14]/50 transition-colors">
+                <tr key={invite.id} className="border-b border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.03)] transition-colors">
                   <td className="px-4 py-3">
-                    <code className="text-xs bg-[#0B0B14] text-white px-1.5 py-0.5 rounded border border-[#22223A]">{invite.code}</code>
+                    <code className="text-xs bg-[rgba(255,255,255,0.06)] text-white px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.12)]">{invite.code}</code>
                   </td>
-                  <td className="px-4 py-3 text-[#56566E]">{getRelativeTime(invite.created_at)}</td>
+                  <td className="px-4 py-3 text-[rgba(255,255,255,0.45)]">{getRelativeTime(invite.created_at)}</td>
                   <td className="px-4 py-3 text-white">{invite.uses_count}/{invite.max_uses || '∞'}</td>
                   <td className="px-4 py-3">
                     <Badge variant={invite.is_active ? 'success' : 'destructive'}>
@@ -130,7 +130,7 @@ export default function AdminInvitesPage() {
               ))}
               {invites.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-[#56566E]">
+                  <td colSpan={5} className="px-4 py-8 text-center text-[rgba(255,255,255,0.45)]">
                     No invite links yet
                   </td>
                 </tr>

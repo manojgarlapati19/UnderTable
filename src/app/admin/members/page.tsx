@@ -107,7 +107,7 @@ export default function AdminMembersPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-accent" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#A78BFA]" />
       </div>
     )
   }
@@ -133,11 +133,11 @@ export default function AdminMembersPage() {
 
         <TabsContent value="pending" className="mt-4">
           {members.length === 0 ? (
-            <p className="text-sm text-[#56566E]">No pending approvals</p>
+            <p className="text-sm text-[rgba(255,255,255,0.45)]">No pending approvals</p>
           ) : (
             <div className="space-y-2">
               {members.map((member) => (
-                <div key={member.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+                <div key={member.id} className="flex items-center gap-3 glass-card rounded-[14px] p-3">
                   <input
                     type="checkbox"
                     checked={selectedIds.has(member.id)}
@@ -169,11 +169,11 @@ export default function AdminMembersPage() {
 
         <TabsContent value="approved" className="mt-4">
           {members.length === 0 ? (
-            <p className="text-sm text-[#56566E]">No approved members</p>
+            <p className="text-sm text-[rgba(255,255,255,0.45)]">No approved members</p>
           ) : (
             <div className="space-y-2">
               {members.map((member) => (
-                <div key={member.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+                <div key={member.id} className="flex items-center gap-3 glass-card rounded-[14px] p-3">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback style={{ backgroundColor: getAvatarColor(member.anonymous_name) }} className="text-white text-xs">
                       {member.anonymous_name.charAt(0)}
@@ -197,11 +197,11 @@ export default function AdminMembersPage() {
 
         <TabsContent value="banned" className="mt-4">
           {members.length === 0 ? (
-            <p className="text-sm text-[#56566E]">No banned members</p>
+            <p className="text-sm text-[rgba(255,255,255,0.45)]">No banned members</p>
           ) : (
             <div className="space-y-2">
               {members.map((member) => (
-                <div key={member.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+                <div key={member.id} className="flex items-center gap-3 glass-card rounded-[14px] p-3">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback style={{ backgroundColor: getAvatarColor(member.anonymous_name) }} className="text-white text-xs">
                       {member.anonymous_name.charAt(0)}

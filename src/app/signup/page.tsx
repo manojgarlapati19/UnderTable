@@ -139,21 +139,21 @@ function SignupPage() {
   if (!inviteCode) return null
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-auth-bg">
-      <div className="w-full max-w-sm space-y-8 px-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-sm glass-auth p-8 space-y-6 shadow-2xl">
         {/* Header */}
         <div className="text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-[16px] ghost-glow mb-5">
-            <span className="text-2xl font-bold text-white">U</span>
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-[17px] ghost-glow mb-5">
+            <span className="text-2xl font-bold text-[#2E1065]">U</span>
           </div>
           <h1 className="text-[26px] font-medium text-white">Join UnderTable</h1>
-          <p className="text-sm text-[#8888A0] mt-1">
+          <p className="text-sm text-[rgba(255,255,255,0.7)] mt-1">
             What happens UnderTable, stays UnderTable.
           </p>
         </div>
 
         {error && (
-          <div className="rounded-[12px] bg-red-500/10 p-3 text-sm text-red-400 text-center border border-red-500/20">
+          <div className="rounded-[13px] bg-red-500/10 p-3 text-sm text-red-400 text-center border border-red-500/20">
             {error}
           </div>
         )}
@@ -171,7 +171,7 @@ function SignupPage() {
                       setName(suggestion)
                       checkNameAvailability(suggestion)
                     }}
-                    className="rounded-full border border-[#22223A] bg-[#13131F] px-3 py-1.5 text-xs text-white transition-all duration-150 hover:border-accent hover:bg-[#1A1530]"
+                    className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] backdrop-blur-[20px] px-3 py-1.5 text-xs text-white transition-all duration-150 hover:border-[#C4B5FD] hover:bg-[rgba(255,255,255,0.1)]"
                   >
                     {suggestion}
                   </button>
@@ -256,7 +256,7 @@ function SignupPage() {
 
             <Button
               type="submit"
-              className="w-full h-10 bg-accent-gradient text-white hover:bg-accent-gradient-hover shadow-lg shadow-purple-500/25"
+              className="w-full h-10"
               disabled={loading || !nameAvailable || !name || !email || !password}
             >
               {loading ? 'Creating account...' : 'Join UnderTable'}

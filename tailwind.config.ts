@@ -13,7 +13,7 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         primary: {
-          DEFAULT: "#7C3AED",
+          DEFAULT: "#A78BFA",
           50: "#F5F3FF",
           100: "#EDE9FE",
           200: "#DDD6FE",
@@ -25,38 +25,28 @@ const config: Config = {
           800: "#5B21B6",
           900: "#4C1D95",
         },
-        // Design system custom colors
-        dark: {
-          bg: "#07070D",
-          "bg-alt": "#0B0B14",
-          "bg-main": "#0E0E1A",
-          surface: "#13131F",
-          bubble: "#16162A",
-          border: "#18182A",
-          "border-hover": "#22223A",
-        },
         accent: {
-          DEFAULT: "#7C3AED",
-          hover: "#A855F7",
+          DEFAULT: "#A78BFA",
+          hover: "#F0ABFC",
+        },
+        glass: {
+          white: "rgba(255,255,255,0.05)",
+          light: "rgba(255,255,255,0.08)",
+          medium: "rgba(255,255,255,0.1)",
+          border: "rgba(255,255,255,0.08)",
+          "border-light": "rgba(255,255,255,0.1)",
+          "border-medium": "rgba(255,255,255,0.16)",
         },
         text: {
           primary: "#FFFFFF",
-          secondary: "#8888A0",
-          muted: "#56566E",
-          hint: "#4A4A60",
+          secondary: "rgba(255,255,255,0.7)",
+          muted: "rgba(255,255,255,0.45)",
+          hint: "rgba(255,255,255,0.35)",
+          lavender: "#C4B5FD",
         },
         status: {
-          online: "#22C55E",
+          online: "#34D399",
           idle: "#F59E0B",
-        },
-        sidebar: {
-          DEFAULT: "var(--sidebar-bg)",
-          hover: "var(--sidebar-hover)",
-          active: "var(--sidebar-active)",
-        },
-        card: {
-          DEFAULT: "var(--card-bg)",
-          foreground: "var(--card-foreground)",
         },
       },
       fontFamily: {
@@ -64,10 +54,13 @@ const config: Config = {
         mono: ["var(--font-geist-mono)", "monospace"],
       },
       backgroundImage: {
-        "accent-gradient": "linear-gradient(135deg, #7C3AED, #9333EA)",
-        "accent-gradient-hover": "linear-gradient(135deg, #7C3AED, #A855F7)",
-        "auth-bg": "radial-gradient(circle at 50% 30%, #1A1530 0%, #0B0B14 100%)",
-        "message-own": "linear-gradient(135deg, #7C3AED, #9333EA)",
+        "primary-gradient": "linear-gradient(135deg, #A78BFA, #F0ABFC)",
+        "primary-gradient-hover": "linear-gradient(135deg, #B99BFC, #F5BCFC)",
+        "message-own": "linear-gradient(135deg, #A78BFA, #F0ABFC)",
+      },
+      boxShadow: {
+        glow: "0 8px 32px rgba(167,139,250,0.5)",
+        "glow-sm": "0 4px 16px rgba(167,139,250,0.3)",
       },
       keyframes: {
         "slide-up": {
@@ -100,8 +93,12 @@ const config: Config = {
           "100%": { backgroundPosition: "200% 0" },
         },
         "message-highlight-anim": {
-          "0%": { backgroundColor: "rgba(124, 58, 237, 0.15)" },
+          "0%": { backgroundColor: "rgba(167, 139, 250, 0.15)" },
           "100%": { backgroundColor: "transparent" },
+        },
+        "bounce-dot": {
+          "0%, 80%, 100%": { transform: "translateY(0)" },
+          "40%": { transform: "translateY(-6px)" },
         },
       },
       animation: {
@@ -113,11 +110,14 @@ const config: Config = {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         shimmer: "shimmer 1.5s infinite",
         "message-highlight": "message-highlight-anim 2s ease-out",
+        "bounce-dot": "bounce-dot 1.4s infinite ease-in-out both",
       },
       borderRadius: {
-        "bubble": "16px",
-        "input": "12px",
+        "bubble": "17px",
+        "input": "13px",
         "icon": "11px",
+        "card": "14px",
+        "auth": "24px",
         "full": "50%",
       },
     },

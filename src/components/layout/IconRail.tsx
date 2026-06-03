@@ -36,10 +36,10 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
   }
 
   return (
-    <aside className="flex w-16 flex-col items-center bg-[#0B0B14] border-r border-[#18182A] shrink-0">
+    <aside className="flex w-[60px] flex-col items-center glass-panel border-r border-[rgba(255,255,255,0.08)] shrink-0">
       {/* Ghost Logo */}
       <div className="flex items-center justify-center h-16 w-full">
-        <Link href="/chat" className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-accent-gradient shadow-lg shadow-purple-500/30">
+        <Link href="/chat" className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-primary-gradient shadow-glow-sm text-[#2E1065] font-bold">
           <span className="text-base font-bold text-white">U</span>
         </Link>
       </div>
@@ -51,8 +51,8 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
             isInChat
-              ? 'bg-[#1A1530] text-[#A855F7]'
-              : 'text-[#56566E] hover:bg-[#13131F] hover:text-[#8888A0]'
+              ? 'bg-[rgba(255,255,255,0.18)] text-white'
+              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
           )}
           title="Chat"
         >
@@ -63,8 +63,8 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
             pathname === '/chat'
-              ? 'bg-[#1A1530] text-[#A855F7]'
-              : 'text-[#56566E] hover:bg-[#13131F] hover:text-[#8888A0]'
+              ? 'bg-[rgba(255,255,255,0.18)] text-white'
+              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
           )}
           title="Hot Topics"
         >
@@ -75,8 +75,8 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
             pathname === '/chat'
-              ? 'bg-[#1A1530] text-[#A855F7]'
-              : 'text-[#56566E] hover:bg-[#13131F] hover:text-[#8888A0]'
+              ? 'bg-[rgba(255,255,255,0.18)] text-white'
+              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
           )}
           title="Leaderboard"
         >
@@ -87,8 +87,8 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
             isActive('/bookmarks')
-              ? 'bg-[#1A1530] text-[#A855F7]'
-              : 'text-[#56566E] hover:bg-[#13131F] hover:text-[#8888A0]'
+              ? 'bg-[rgba(255,255,255,0.18)] text-white'
+              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
           )}
           title="Bookmarks"
         >
@@ -99,8 +99,8 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
             isActive('/search')
-              ? 'bg-[#1A1530] text-[#A855F7]'
-              : 'text-[#56566E] hover:bg-[#13131F] hover:text-[#8888A0]'
+              ? 'bg-[rgba(255,255,255,0.18)] text-white'
+              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
           )}
           title="Search"
         >
@@ -112,14 +112,14 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
       <div className="flex flex-col items-center gap-1 pb-4 px-3">
         <button
           onClick={onOpenSettings}
-          className="flex h-10 w-10 items-center justify-center rounded-[11px] text-[#56566E] hover:bg-[#13131F] hover:text-[#8888A0] transition-all duration-150"
+          className="flex h-10 w-10 items-center justify-center rounded-[11px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)] transition-all duration-150"
           title="Settings"
         >
           <Settings className="h-5 w-5" />
         </button>
         <button
           onClick={handleLogout}
-          className="flex h-10 w-10 items-center justify-center rounded-[11px] text-[#56566E] hover:bg-[#13131F] hover:text-red-400 transition-all duration-150"
+          className="flex h-10 w-10 items-center justify-center rounded-[11px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-red-400 transition-all duration-150"
           title="Logout"
         >
           <LogOut className="h-5 w-5" />

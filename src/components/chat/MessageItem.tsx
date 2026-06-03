@@ -110,23 +110,22 @@ export default function MessageItem({
 
   const canEdit = isOwn && !isDeleted && (Date.now() - new Date(message.created_at).getTime() < 10 * 60 * 1000)
 
-  if (isDeleted) {
-    return (
-      <div ref={messageRef} id={`msg-${message.id}`} className="px-4 py-1">
-        <div className="flex items-center gap-2 py-1">
-          <div className="w-8" />
-          <p className="text-sm italic text-[#56566E]">this message was removed</p>
-        </div>
+  if (isDeleted) {  return (
+    <div ref={messageRef} id={`msg-${message.id}`} className="px-4 py-1">
+      <div className="flex items-center gap-2 py-1">
+        <div className="w-8" />
+        <p className="text-sm italic text-[rgba(255,255,255,0.45)]">this message was removed</p>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   if (isBlocked) {
     return (
       <div ref={messageRef} id={`msg-${message.id}`} className="px-4 py-1">
         <div className="flex items-center gap-2 py-1">
           <div className="w-8" />
-          <p className="text-sm italic text-[#56566E]">message hidden</p>
+          <p className="text-sm italic text-[rgba(255,255,255,0.45)]">message hidden</p>
         </div>
       </div>
     )
@@ -138,7 +137,7 @@ export default function MessageItem({
       id={`msg-${message.id}`}
       className={cn(
         'group relative px-4 py-0.5 transition-colors duration-150',
-        isOwn ? 'hover:bg-transparent' : 'hover:bg-[#0B0B14]/50'
+        isOwn ? 'hover:bg-transparent' : 'hover:bg-[rgba(255,255,255,0.02)]'
       )}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
@@ -146,10 +145,10 @@ export default function MessageItem({
       {/* Reply context */}
       {message.reply_to_message && (
         <div className={cn('flex items-center gap-2 mb-1', isOwn ? 'justify-end mr-10' : 'ml-10')}>
-          <div className="w-1 h-4 rounded-full shrink-0 bg-accent" />
+          <div className="w-1 h-4 rounded-full shrink-0 bg-[#A78BFA]" />
           <button
             onClick={() => onJumpToMessage(message.reply_to!)}
-            className="text-xs text-[#56566E] hover:text-accent transition-colors duration-150 truncate"
+            className="text-xs text-[rgba(255,255,255,0.45)] hover:text-[#A78BFA] transition-colors duration-150 truncate"
           >
             <span className="font-medium">{message.reply_to_message.profiles?.anonymous_name || 'Unknown'}</span>
             : {message.reply_to_message.content}
@@ -176,13 +175,13 @@ export default function MessageItem({
           {/* Header */}
           {isGroupStart && !isOwn && (
             <div className="flex items-center gap-2 mb-0.5 px-1">
-              <span className="text-sm font-medium text-[#A29BD4]">
+              <span className="text-sm font-medium text-[#C4B5FD]">
                 {message.profiles?.anonymous_name || 'Unknown'}
               </span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-[10px] text-[#56566E] cursor-default">
+                    <span className="text-[10px] text-[rgba(255,255,255,0.45)] cursor-default">
                       {timeAgo}
                     </span>
                   </TooltipTrigger>
@@ -217,16 +216,16 @@ export default function MessageItem({
           ) : (
             <div
               className={cn(
-                'rounded-[16px] px-3.5 py-2 leading-relaxed whitespace-pre-wrap break-words animate-slide-up',
+                'rounded-[17px] px-3.5 py-2 leading-relaxed whitespace-pre-wrap break-words animate-slide-up',
                 isOwn
-                  ? 'bg-accent-gradient text-white rounded-br-[5px]'
-                  : 'bg-[#16162A] text-white rounded-tl-[5px]'
+                  ? 'bg-primary-gradient text-[#2E1065] rounded-br-[5px]'
+                  : 'glass-message text-white rounded-tl-[5px]'
               )}
             >
               <p className="text-sm">
                 {message.content}
                 {message.is_edited && (
-                  <span className="text-[10px] text-white/50 ml-1">(edited)</span>
+                  <span className="text-[10px] text-[rgba(255,255,255,0.5)] ml-1">(edited)</span>
                 )}
               </p>
             </div>
@@ -261,7 +260,7 @@ export default function MessageItem({
           'absolute -top-4 z-10 animate-fade-in',
           isOwn ? 'right-4' : 'left-16'
         )}>
-          <div className="rounded-[12px] border border-[#22223A] bg-[#13131F] shadow-xl px-1 py-0.5 backdrop-blur-xl">
+          <div className="rounded-[13px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] shadow-xl px-1 py-0.5 backdrop-blur-[20px]">
             <ReactionBar
               messageId={message.id}
               userId={currentUserId}

@@ -42,7 +42,7 @@ export default function AdminAnalyticsPage() {
   })
 
   const isDark = true
-  const textColor = '#8888A0'
+  const textColor = 'rgba(255,255,255,0.7)'
 
   useEffect(() => {
     loadData()
@@ -163,7 +163,7 @@ export default function AdminAnalyticsPage() {
   const REACTION_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#F59E0B', '#EF4444']
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-[#A78BFA]" /></div>
   }
 
   return (
@@ -184,23 +184,23 @@ export default function AdminAnalyticsPage() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+        <div className="glass-card rounded-[14px] p-3">
           <p className="text-lg font-bold text-white">{stats.totalMessages.toLocaleString()}</p>
           <p className="text-xs text-[#56566E]">Total Messages</p>
         </div>
-        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+        <div className="glass-card rounded-[14px] p-3">
           <p className="text-lg font-bold text-white">{stats.totalMembers}</p>
           <p className="text-xs text-[#56566E]">Total Members</p>
         </div>
-        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+        <div className="glass-card rounded-[14px] p-3">
           <p className="text-lg font-bold text-white">{stats.activeToday}</p>
           <p className="text-xs text-[#56566E]">Active Today</p>
         </div>
-        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+        <div className="glass-card rounded-[14px] p-3">
           <p className="text-lg font-bold text-white">{stats.roomsCount}</p>
           <p className="text-xs text-[#56566E]">Rooms</p>
         </div>
-        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-3">
+        <div className="glass-card rounded-[14px] p-3">
           <p className="text-lg font-bold text-white">{stats.avgMessagesPerDay}</p>
           <p className="text-xs text-[#56566E]">Avg Msgs/Day</p>
         </div>
@@ -209,69 +209,72 @@ export default function AdminAnalyticsPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Messages per day */}
-        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+        <div className="glass-card rounded-[14px] p-4">
           <h3 className="text-sm font-medium text-white mb-4">Messages Per Day</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={messageData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#22223A" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: textColor }} />
                 <YAxis tick={{ fontSize: 11, fill: textColor }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#13131F',
-                    border: '1px solid #22223A',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.12)',
                     borderRadius: '8px',
                     fontSize: '12px',
                     color: '#fff',
+                    backdropFilter: 'blur(20px)',
                   }}
                 />
-                <Line type="monotone" dataKey="messages" stroke="#7C3AED" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="messages" stroke="#A78BFA" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Peak activity hours */}
-        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+        <div className="glass-card rounded-[14px] p-4">
           <h3 className="text-sm font-medium text-white mb-4">Peak Activity Hours</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#22223A" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                 <XAxis dataKey="hour" tick={{ fontSize: 10, fill: textColor }} />
                 <YAxis tick={{ fontSize: 11, fill: textColor }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#13131F',
-                    border: '1px solid #22223A',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.12)',
                     borderRadius: '8px',
                     fontSize: '12px',
                     color: '#fff',
+                    backdropFilter: 'blur(20px)',
                   }}
                 />
-                <Bar dataKey="messages" fill="#7C3AED" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="messages" fill="#A78BFA" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Most active rooms */}
-        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+        <div className="glass-card rounded-[14px] p-4">
           <h3 className="text-sm font-medium text-white mb-4">Most Active Rooms</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={roomData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#22223A" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: textColor }} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: textColor }} width={100} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#13131F',
-                    border: '1px solid #22223A',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.12)',
                     borderRadius: '8px',
                     fontSize: '12px',
                     color: '#fff',
+                    backdropFilter: 'blur(20px)',
                   }}
                 />
                 <Bar dataKey="messages" fill="#7C3AED" radius={[0, 4, 4, 0]} />
@@ -281,7 +284,7 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Top reactions */}
-        <div className="rounded-[16px] border border-[#22223A] bg-[#13131F] p-4">
+        <div className="glass-card rounded-[14px] p-4">
           <h3 className="text-sm font-medium text-white mb-4">Top Reactions</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -301,11 +304,12 @@ export default function AdminAnalyticsPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#13131F',
-                    border: '1px solid #22223A',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.12)',
                     borderRadius: '8px',
                     fontSize: '12px',
                     color: '#fff',
+                    backdropFilter: 'blur(20px)',
                   }}
                 />
               </PieChart>

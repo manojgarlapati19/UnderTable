@@ -47,23 +47,23 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-auth-bg">
-      <div className="w-full max-w-sm space-y-8 px-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-sm glass-auth p-8 space-y-6 shadow-2xl">
         {/* Logo */}
         <div className="text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-[16px] ghost-glow mb-5">
-            <span className="text-2xl font-bold text-white">U</span>
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-[17px] ghost-glow mb-5">
+            <span className="text-2xl font-bold text-[#2E1065]">U</span>
           </div>
           <h1 className="text-[26px] font-medium text-white">UnderTable</h1>
-          <p className="text-sm text-[#8888A0] mt-1">
+          <p className="text-sm text-[rgba(255,255,255,0.7)] mt-1">
             What happens UnderTable, stays UnderTable.
           </p>
-          <p className="text-xs text-[#56566E]">Table Top Tech</p>
+          <p className="text-xs text-[rgba(255,255,255,0.45)]">Table Top Tech</p>
         </div>
 
         {/* Error banner */}
         {error && (
-          <div className="flex items-center gap-2 rounded-[12px] bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20">
+          <div className="flex items-center gap-2 rounded-[13px] bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <p>{error}</p>
           </div>
@@ -107,12 +107,12 @@ function LoginPage() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-10 bg-accent-gradient text-white hover:bg-accent-gradient-hover shadow-lg shadow-purple-500/25" disabled={loading}>
+          <Button type="submit" className="w-full h-10" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
 
-        <p className="text-center text-xs text-[#56566E]">
+        <p className="text-center text-xs text-[rgba(255,255,255,0.45)]">
           Don&apos;t have an account? You need an invite link to join.
         </p>
       </div>

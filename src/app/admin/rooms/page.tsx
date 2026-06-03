@@ -142,7 +142,7 @@ export default function AdminRoomsPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-[#A78BFA]" /></div>
   }
 
   return (
@@ -156,7 +156,7 @@ export default function AdminRoomsPage() {
 
       <div className="space-y-2">
         {rooms.map((room) => (
-          <div key={room.id} className="flex items-center gap-3 rounded-[16px] border border-[#22223A] bg-[#13131F] p-3 hover:border-accent/30 transition-all duration-150">
+          <div key={room.id} className="flex items-center gap-3 glass-card rounded-[14px] p-3 hover:border-[rgba(255,255,255,0.2)] transition-all duration-150">
             <span className="text-xl">{room.icon_emoji}</span>
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export default function AdminRoomsPage() {
                 {room.is_confession_box && <Flame className="h-3 w-3 text-orange-500" />}
               </div>
               {room.description && (
-                <p className="text-xs text-[#56566E]">{room.description}</p>
+                <p className="text-xs text-[rgba(255,255,255,0.45)]">{room.description}</p>
               )}
             </div>
             <div className="flex gap-1">
@@ -208,9 +208,9 @@ export default function AdminRoomsPage() {
                     type="color"
                     value={form.accent_color}
                     onChange={(e) => setForm({ ...form, accent_color: e.target.value })}
-                    className="h-9 w-12 rounded-[8px] border border-[#22223A] bg-[#0B0B14] cursor-pointer"
+                    className="h-9 w-12 rounded-[8px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] cursor-pointer"
                   />
-                  <span className="text-xs text-[#56566E]">{form.accent_color}</span>
+                  <span className="text-xs text-[rgba(255,255,255,0.45)]">{form.accent_color}</span>
                 </div>
               </div>
             </div>

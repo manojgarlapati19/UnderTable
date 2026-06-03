@@ -40,7 +40,7 @@ export default function ChatIndexPage() {
 
   if (error && showFeed) {
     return (
-      <div className="flex-1 overflow-y-auto bg-[#0E0E1A]">
+      <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto p-6">
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="w-full">
@@ -64,7 +64,7 @@ export default function ChatIndexPage() {
   }
 
   return (
-    <div className="flex-1 flex items-center justify-center bg-[#0E0E1A]">
+    <div className="flex-1 flex items-center justify-center">
       <Loader2 className="h-8 w-8 animate-spin text-accent" />
     </div>
   )
