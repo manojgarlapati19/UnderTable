@@ -190,18 +190,21 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
         <div className="fixed inset-0 z-40 bg-[#1E1B4B]/80 lg:hidden" onClick={onToggle} />
       )}
 
-      {/* ── KEY FIX: relative on desktop so it participates in flex flow ── */}
+      {/* ── Sidebar: inline styles guarantee 220px column in flex layout ── */}
       <aside
-        className={cn(
-          // Mobile: slide in from left as drawer
-          'fixed inset-y-0 left-[60px] z-50 w-[220px] flex flex-col',
-          'border-r border-[rgba(255,255,255,0.08)]',
-          'bg-[rgba(255,255,255,0.05)] backdrop-blur-[20px]',
-          'transition-transform duration-300',
-          isOpen ? 'translate-x-0' : '-translate-x-full',
-          // Desktop: reset to normal flow — NOT fixed anymore
-          'lg:relative lg:inset-auto lg:left-auto lg:z-auto lg:translate-x-0 lg:shrink-0'
-        )}
+        style={{
+          width: '220px',
+          minWidth: '220px',
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'rgba(20, 15, 60, 0.55)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRight: '1px solid rgba(255,255,255,0.12)',
+          height: '100%',
+          overflow: 'hidden',
+        }}
       >
         {/* Table Top Tech label */}
         <div className="px-4 pt-4 pb-2">
