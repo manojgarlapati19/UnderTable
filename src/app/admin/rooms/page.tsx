@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -30,6 +31,7 @@ export default function AdminRoomsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [editingRoom, setEditingRoom] = useState<Tables<'rooms'> | null>(null)
+  const [deletingRoom, setDeletingRoom] = useState<Tables<'rooms'> | null>(null)
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -112,13 +114,19 @@ export default function AdminRoomsPage() {
   }
 
   async function deleteRoom(roomId: string) {
-    if (!confirm('Delete this room? All messages will be permanently deleted.')) return
+    const { error } = await supabase
+      .from('rooms')
+      .delete()
+      .eq('id', roomId)
 
-    const { error } = await supabase.from('rooms').delete().eq('id', roomId)
-    if (!error) {
-      toast.success('Room deleted')
-      await loadRooms()
+    if (error) {
+      toast.error('Failed to delete room')
+      return
     }
+
+    toast.success('Room deleted')
+    setDeletingRoom(null)
+    await loadRooms()
   }
 
   function resetForm() {
@@ -179,7 +187,7 @@ export default function AdminRoomsPage() {
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[8px]" onClick={() => openEdit(room)}>
                 <Edit className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[8px] text-red-400" onClick={() => deleteRoom(room.id)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[8px] text-red-400" onClick={() => setDeletingRoom(room)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -254,6 +262,31 @@ export default function AdminRoomsPage() {
             </div>
             <Button onClick={editingRoom ? updateRoom : createRoom} className="w-full">
               {editingRoom ? 'Save Changes' : 'Create Room'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deletingRoom} onOpenChange={(open) => { if (!open) setDeletingRoom(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Room</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>#{deletingRoom?.name}</strong>?
+              <br />
+              This will permanently delete all messages in this room.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setDeletingRoom(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deletingRoom && deleteRoom(deletingRoom.id)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete Room
             </Button>
           </div>
         </DialogContent>
