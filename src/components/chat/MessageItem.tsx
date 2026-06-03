@@ -20,9 +20,12 @@ import type { Tables } from '@/lib/supabase/database.types'
 
 interface MessageItemProps {
   message: Tables<'messages'> & {
-    profiles?: { anonymous_name: string; avatar_color: string }
-    reactions?: Array<{ id: string; emoji: string; user_id: string; profiles?: { anonymous_name: string } }>
-    reply_to_message?: Tables<'messages'> & { profiles?: { anonymous_name: string } }
+    profile?: { anonymous_name: string; avatar_color: string } | null
+    reactions?: Array<{ id: string; emoji: string; user_id: string }>
+    reply_message?: {
+      content: string
+      profile?: { anonymous_name: string } | null
+    } | null
   }
   isOwn: boolean
   isGroupStart: boolean
@@ -64,10 +67,13 @@ export default function MessageItem({
   const messageRef = useRef<HTMLDivElement>(null)
   const [timeAgo, setTimeAgo] = useState(() => getRelativeTime(message.created_at))
   const isDeleted = message.is_deleted
-  const avatarGradient = message.profiles?.anonymous_name
-    ? getAvatarGradient(message.profiles.anonymous_name)
+
+  // Use profile (new field name from fixed hook)
+  const senderName = message.profile?.anonymous_name || 'Unknown'
+  const avatarGradient = message.profile?.anonymous_name
+    ? getAvatarGradient(message.profile.anonymous_name)
     : 'linear-gradient(135deg, #7C3AED, #9333EA)'
-  const avatarColor = message.profiles?.avatar_color || getAvatarColor(message.profiles?.anonymous_name || 'Unknown')
+  const avatarColor = message.profile?.avatar_color || getAvatarColor(senderName)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -103,13 +109,14 @@ export default function MessageItem({
 
   const supabase = createClient()
 
-  const reactionGroups = message.reactions?.reduce<Record<string, { count: number; hasReacted: boolean; names: string[] }>>((acc, r) => {
+  const reactionGroups = message.reactions?.reduce<
+    Record<string, { count: number; hasReacted: boolean; names: string[] }>
+  >((acc, r) => {
     if (!acc[r.emoji]) {
       acc[r.emoji] = { count: 0, hasReacted: false, names: [] }
     }
     acc[r.emoji].count++
     if (r.user_id === currentUserId) acc[r.emoji].hasReacted = true
-    if (r.profiles?.anonymous_name) acc[r.emoji].names.push(r.profiles.anonymous_name)
     return acc
   }, {}) || {}
 
@@ -143,17 +150,21 @@ export default function MessageItem({
     [message.id, currentUserId, userReactedEmojis, supabase]
   )
 
-  const canEdit = isOwn && !isDeleted && (Date.now() - new Date(message.created_at).getTime() < 10 * 60 * 1000)
+  const canEdit =
+    isOwn &&
+    !isDeleted &&
+    Date.now() - new Date(message.created_at).getTime() < 10 * 60 * 1000
 
-  if (isDeleted) {  return (
-    <div ref={messageRef} id={`msg-${message.id}`} className="px-4 py-1">
-      <div className="flex items-center gap-2 py-1">
-        <div className="w-8" />
-        <p className="text-sm italic text-[rgba(255,255,255,0.45)]">this message was removed</p>
+  if (isDeleted) {
+    return (
+      <div ref={messageRef} id={`msg-${message.id}`} className="px-4 py-1">
+        <div className="flex items-center gap-2 py-1">
+          <div className="w-8" />
+          <p className="text-sm italic text-[rgba(255,255,255,0.45)]">this message was removed</p>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
 
   if (isBlocked) {
     return (
@@ -177,16 +188,18 @@ export default function MessageItem({
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      {/* Reply context */}
-      {message.reply_to_message && (
+      {/* Reply context — uses reply_message (new field name) */}
+      {message.reply_message && (
         <div className={cn('flex items-center gap-2 mb-1', isOwn ? 'justify-end mr-10' : 'ml-10')}>
           <div className="w-1 h-4 rounded-full shrink-0 bg-[#A78BFA]" />
           <button
-            onClick={() => onJumpToMessage(message.reply_to!)}
+            onClick={() => message.reply_to && onJumpToMessage(message.reply_to)}
             className="text-xs text-[rgba(255,255,255,0.45)] hover:text-[#A78BFA] transition-colors duration-150 truncate"
           >
-            <span className="font-medium">{message.reply_to_message.profiles?.anonymous_name || 'Unknown'}</span>
-            : {message.reply_to_message.content}
+            <span className="font-medium">
+              {message.reply_message.profile?.anonymous_name || 'Unknown'}
+            </span>
+            : {message.reply_message.content}
           </button>
         </div>
       )}
@@ -199,7 +212,7 @@ export default function MessageItem({
               style={{ background: avatarGradient }}
               className="text-white text-xs"
             >
-              {message.profiles?.anonymous_name?.charAt(0) || '?'}
+              {senderName.charAt(0)}
             </AvatarFallback>
           </Avatar>
         ) : (
@@ -210,9 +223,7 @@ export default function MessageItem({
           {/* Header */}
           {isGroupStart && !isOwn && (
             <div className="flex items-center gap-2 mb-0.5 px-1">
-              <span className="text-sm font-medium text-[#C4B5FD]">
-                {message.profiles?.anonymous_name || 'Unknown'}
-              </span>
+              <span className="text-sm font-medium text-[#C4B5FD]">{senderName}</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -237,15 +248,24 @@ export default function MessageItem({
                 rows={1}
                 onChange={(e) => setEditContent(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveEdit() }
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSaveEdit()
+                  }
                   if (e.key === 'Escape') handleCancelEdit()
                 }}
                 className="flex-1 rounded-[12px] border border-accent bg-[#13131F] px-3 py-1.5 text-sm text-white outline-none resize-none"
               />
-              <button onClick={handleSaveEdit} className="text-xs text-accent font-medium hover:underline">
+              <button
+                onClick={handleSaveEdit}
+                className="text-xs text-accent font-medium hover:underline"
+              >
                 Save
               </button>
-              <button onClick={handleCancelEdit} className="text-xs text-[#56566E] hover:underline">
+              <button
+                onClick={handleCancelEdit}
+                className="text-xs text-[#56566E] hover:underline"
+              >
                 Cancel
               </button>
             </div>
@@ -292,10 +312,9 @@ export default function MessageItem({
 
       {/* Floating action bar */}
       {showActions && !isEditing && (
-        <div className={cn(
-          'absolute -top-4 z-10 animate-fade-in',
-          isOwn ? 'right-4' : 'left-16'
-        )}>
+        <div
+          className={cn('absolute -top-4 z-10 animate-fade-in', isOwn ? 'right-4' : 'left-16')}
+        >
           <div className="rounded-[13px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] shadow-xl px-1 py-0.5 backdrop-blur-[20px]">
             <ReactionBar
               messageId={message.id}
