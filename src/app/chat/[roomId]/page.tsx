@@ -15,7 +15,8 @@ import PollCreateModal from '@/components/chat/PollCreateModal'
 import GifPickerModal from '@/components/chat/GifPickerModal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Pin, Users, Settings } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Pin, Settings, Search, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Tables } from '@/lib/supabase/database.types'
 
@@ -35,6 +36,18 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   const [showGifModal, setShowGifModal] = useState(false)
   const [blockedUserIds, setBlockedUserIds] = useState<string[]>([])
 
+  // Search state
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true)
+
+  // Debounce search by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   const { messages, loading: messagesLoading, sendMessage, editMessage, deleteMessage } = useMessages({
     roomId: params.roomId,
   })
@@ -44,6 +57,7 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   const onlineCount = visibleUsers.filter((u) => u.current_room === params.roomId).length
 
   useEffect(() => {
+    checkRoomAccess()
     loadRoom()
     loadProfile()
     loadBlocks()
@@ -53,6 +67,43 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
       updateCurrentRoom(null)
     }
   }, [params.roomId])
+
+  // Ctrl+F to open search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        setIsSearchOpen((prev) => !prev)
+        if (!isSearchOpen) {
+          setSearchQuery('')
+        }
+      }
+      if (e.key === 'Escape' && isSearchOpen) {
+        setIsSearchOpen(false)
+        setSearchQuery('')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSearchOpen])
+
+  async function checkRoomAccess() {
+    const { data: roomData } = await supabase
+      .from('rooms')
+      .select('room_password')
+      .eq('id', params.roomId)
+      .single()
+
+    if (roomData && (roomData as any).room_password) {
+      const hasAccess = sessionStorage.getItem(`room_access_${params.roomId}`)
+      if (!hasAccess) {
+        toast.error('This room is password protected')
+        router.push('/chat')
+        return
+      }
+    }
+    setIsCheckingAccess(false)
+  }
 
   async function loadRoom() {
     const { data } = await supabase
@@ -106,7 +157,7 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         setReplyTo({
           id: msg.id,
           content: msg.content,
-          senderName: msg.profiles?.anonymous_name || 'Unknown',
+          senderName: msg.sender_name || 'Unknown',
         })
       }
     },
@@ -175,7 +226,7 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
   const handleBlock = useCallback(
     async (userId: string) => {
-      if (!profile || !confirm('Block this person? Their messages will be hidden from you.')) return
+      if (!profile) return
 
       const { error } = await supabase.from('blocks').insert({
         blocker_id: profile.id,
@@ -184,26 +235,10 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
       if (!error) {
         setBlockedUserIds([...blockedUserIds, userId])
-        toast.success('User blocked')
+        toast.success('User blocked. Their messages are now hidden.')
       }
     },
     [profile, blockedUserIds, supabase]
-  )
-
-  const handleBookmark = useCallback(
-    async (messageId: string) => {
-      if (!profile) return
-
-      const { error } = await supabase.from('bookmarks').insert({
-        user_id: profile.id,
-        message_id: messageId,
-      })
-
-      if (error && error.code === '23505') toast.info('Already bookmarked')
-      else if (error) toast.error('Failed to bookmark')
-      else toast.success('Message bookmarked')
-    },
-    [profile, supabase]
   )
 
   const handleJumpToMessage = useCallback(
@@ -216,6 +251,14 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     },
     []
   )
+
+  if (isCheckingAccess) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    )
+  }
 
   if (!room || !profile) {
     return (
@@ -250,6 +293,20 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
             </Badge>
           )}
 
+          {/* Search button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              'h-8 w-8 rounded-[11px] transition-all duration-150',
+              isSearchOpen ? 'bg-[rgba(167,139,250,0.2)] text-[#C4B5FD]' : ''
+            )}
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+            title="Search messages (Ctrl+F)"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[11px]">
             <Pin className="h-4 w-4" />
           </Button>
@@ -261,6 +318,37 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
           )}
         </div>
       </div>
+
+      {/* Search bar */}
+      {isSearchOpen && (
+        <div className="px-4 py-2 border-b border-[rgba(255,255,255,0.08)] glass-panel animate-slide-up">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-[rgba(255,255,255,0.45)] shrink-0" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search messages in #${room.name}...`}
+              className="flex-1 h-8 text-sm border-0 bg-transparent outline-none placeholder:text-[rgba(255,255,255,0.35)]"
+              autoFocus
+            />
+            {debouncedSearch && (
+              <span className="text-xs text-[rgba(255,255,255,0.45)]">
+                {messages.filter((m) =>
+                  m.content.toLowerCase().includes(debouncedSearch.toLowerCase())
+                ).length} results
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-[8px] text-[rgba(255,255,255,0.45)] hover:text-white"
+              onClick={() => { setIsSearchOpen(false); setSearchQuery('') }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Accent color accent bar */}
       <div className="h-0.5 w-full" style={{ backgroundColor: accentColor }} />
@@ -278,13 +366,14 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         isConfessionBox={room.is_confession_box}
         accentColor={accentColor}
         blockedUserIds={blockedUserIds}
+        searchQuery={debouncedSearch}
+        isSearchOpen={isSearchOpen}
         onReply={handleReply}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onPin={handlePin}
         onReport={handleReport}
         onBlock={handleBlock}
-        onBookmark={handleBookmark}
         onJumpToMessage={handleJumpToMessage}
       />
 

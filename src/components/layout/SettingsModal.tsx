@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { RefreshCw, UserX, UserCheck } from 'lucide-react'
+import { RefreshCw, UserX, UserCheck, Ghost } from 'lucide-react'
+import { cn } from '@/lib/utils/cn'
 import type { Tables } from '@/lib/supabase/database.types'
 
 interface SettingsModalProps {
@@ -31,6 +32,8 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
   const [blocks, setBlocks] = useState<Tables<'blocks'>[]>([])
   const [blockedProfiles, setBlockedProfiles] = useState<Map<string, string>>(new Map())
   const [identityCooldown, setIdentityCooldown] = useState<number>(0)
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false)
+  const [nameSuggestions, setNameSuggestions] = useState<string[]>([])
 
   useEffect(() => {
     if (open) loadData()
@@ -68,6 +71,7 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
       setNotificationPrefs(prefMap)
     }
 
+    // Load blocks
     const { data: blks } = await supabase
       .from('blocks')
       .select('*')
@@ -110,12 +114,15 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
   async function handleIdentityReset() {
     if (identityCooldown > 0) return
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
     const { generateNameSuggestions } = await import('@/lib/utils/name-generator')
     const suggestions = generateNameSuggestions(3)
-    const newName = suggestions[0]
+    setNameSuggestions(suggestions)
+    setShowNameSuggestions(true)
+  }
+
+  async function confirmIdentityReset(newName: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !profile) return
 
     const { error } = await supabase
       .from('profiles')
@@ -123,19 +130,22 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
         anonymous_name: newName,
         identity_reset_at: new Date().toISOString(),
       })
-      .eq('id', user.id)
+      .eq('id', profile.id)
 
     if (!error) {
-      toast.success(`Your new identity is: ${newName}`)
+      toast.success('Your new identity is ready!')
+      setShowNameSuggestions(false)
+      setNameSuggestions([])
       loadData()
     }
   }
 
   async function unblockUser(blockedId: string) {
+    if (!profile) return
     const { error } = await supabase
       .from('blocks')
       .delete()
-      .eq('blocker_id', profile?.id)
+      .eq('blocker_id', profile.id)
       .eq('blocked_id', blockedId)
 
     if (!error) {
@@ -205,7 +215,28 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
               {identityCooldown > 0 ? (
                 <div className="flex items-center gap-2 text-sm text-[rgba(255,255,255,0.45)]">
                   <RefreshCw className="h-4 w-4" />
-                  <span>You can reset your identity in {identityCooldown} days</span>
+                  <span>You can reset your identity in {identityCooldown} day{identityCooldown !== 1 ? 's' : ''}</span>
+                </div>
+              ) : showNameSuggestions ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-[rgba(255,255,255,0.45)]">Choose your new identity:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {nameSuggestions.map((name) => (
+                      <button
+                        key={name}
+                        onClick={() => confirmIdentityReset(name)}
+                        className={cn(
+                          'rounded-[12px] border border-[rgba(255,255,255,0.12)] px-4 py-2 text-sm text-white transition-all duration-150',
+                          'hover:border-[#A78BFA] hover:bg-[rgba(167,139,250,0.1)]'
+                        )}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setShowNameSuggestions(false)} className="text-xs">
+                    Cancel
+                  </Button>
                 </div>
               ) : (
                 <Button variant="outline" onClick={handleIdentityReset}>
@@ -220,11 +251,14 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-white">Ghost Mode</h3>
               <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <p className="text-sm text-white">Hide my presence</p>
-                  <p className="text-xs text-[rgba(255,255,255,0.45)]">
-                    Your presence, read receipts, and typing indicator will be hidden
-                  </p>
+                <div className="flex items-center gap-2">
+                  <Ghost className="h-4 w-4 text-[rgba(255,255,255,0.45)]" />
+                  <div className="space-y-0.5">
+                    <p className="text-sm text-white">Hide my presence</p>
+                    <p className="text-xs text-[rgba(255,255,255,0.45)]">
+                      Your presence, read receipts, and typing indicator will be hidden
+                    </p>
+                  </div>
                 </div>
                 <Switch
                   checked={profile?.ghost_mode || false}
@@ -244,31 +278,41 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
             </div>
           </TabsContent>
 
-          <TabsContent value="blocks" className="space-y-3">
+          <TabsContent value="blocks" className="space-y-3 max-h-80 overflow-y-auto">
+            <div className="flex items-center gap-2 mb-3">
+              <UserX className="h-4 w-4 text-[rgba(255,255,255,0.45)]" />
+              <p className="text-sm text-[rgba(255,255,255,0.45)]">
+                Blocked users ({blocks.length})
+              </p>
+            </div>
             {blocks.length === 0 ? (
               <div className="text-center py-8 text-sm text-[rgba(255,255,255,0.45)]">
                 <UserX className="h-8 w-8 mx-auto mb-2 opacity-50 text-[rgba(255,255,255,0.45)]" />
                 <p>No blocked users</p>
+                <p className="text-xs mt-1">Block users from message hover actions</p>
               </div>
             ) : (
-              blocks.map((block) => (
-                <div key={block.id} className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-2">
-                    <UserX className="h-4 w-4 text-[rgba(255,255,255,0.45)]" />
-                    <span className="text-sm text-white">
-                      {blockedProfiles.get(block.blocked_id) || 'Unknown user'}
-                    </span>
+              <div className="space-y-2">
+                {blocks.map((block) => (
+                  <div key={block.id} className="flex items-center justify-between rounded-[12px] px-3 py-2 hover:bg-[rgba(255,255,255,0.06)]">
+                    <div className="flex items-center gap-2">
+                      <UserX className="h-4 w-4 text-[rgba(255,255,255,0.45)]" />
+                      <span className="text-sm text-white">
+                        {blockedProfiles.get(block.blocked_id) || 'Unknown user'}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => unblockUser(block.blocked_id)}
+                      className="text-xs"
+                    >
+                      <UserCheck className="h-4 w-4 mr-1" />
+                      Unblock
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => unblockUser(block.blocked_id)}
-                  >
-                    <UserCheck className="h-4 w-4 mr-1" />
-                    Unblock
-                  </Button>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </TabsContent>
         </Tabs>

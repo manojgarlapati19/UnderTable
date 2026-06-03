@@ -73,7 +73,8 @@ export default function AdminStartersPage() {
     const { error: msgError } = await supabase.from('messages').insert({
       room_id: generalRoom.id,
       user_id: user.id,
-      content: `💡 Conversation starter: ${question}`,
+      content: `🤖 Today's question: ${question}`,
+      is_pinned: true,
     })
 
     if (!msgError) {

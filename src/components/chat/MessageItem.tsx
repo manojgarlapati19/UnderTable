@@ -11,6 +11,14 @@ import ReadReceipts from './ReadReceipts'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -33,14 +41,43 @@ interface MessageItemProps {
   isBlocked: boolean
   isConfessionBox: boolean
   currentUserId: string
+  searchQuery?: string
   onReply: (messageId: string) => void
   onEdit: (messageId: string, content: string) => void
   onDelete: (messageId: string) => void
   onPin: (messageId: string) => void
   onReport: (messageId: string) => void
   onBlock: (userId: string) => void
-  onBookmark: (messageId: string) => void
   onJumpToMessage: (messageId: string) => void
+}
+
+function highlightSearchText(text: string, searchQuery?: string): (string | React.ReactNode)[] {
+  if (!searchQuery) return highlightMentions(text)
+  const parts = text.split(new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'))
+  return parts.map((part, i) => {
+    if (part.toLowerCase() === searchQuery.toLowerCase()) {
+      return <mark key={i} className="bg-[#A78BFA]/30 text-white rounded px-0.5">{part}</mark>
+    }
+    // Also apply mention highlighting within non-matching parts
+    return highlightMentions(part)
+  })
+}
+
+function highlightMentions(text: string): (string | React.ReactNode)[] {
+  const parts = text.split(/(@\w+\s\w+|@\w+)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('@')) {
+      return (
+        <span
+          key={i}
+          className="bg-[rgba(167,139,250,0.25)] text-[#C4B5FD] rounded px-1"
+        >
+          {part}
+        </span>
+      )
+    }
+    return part
+  })
 }
 
 export default function MessageItem({
@@ -51,24 +88,24 @@ export default function MessageItem({
   isBlocked,
   isConfessionBox,
   currentUserId,
+  searchQuery,
   onReply,
   onEdit,
   onDelete,
   onPin,
   onReport,
   onBlock,
-  onBookmark,
   onJumpToMessage,
 }: MessageItemProps) {
   const [showActions, setShowActions] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content)
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false)
   const editRef = useRef<HTMLTextAreaElement>(null)
   const messageRef = useRef<HTMLDivElement>(null)
   const [timeAgo, setTimeAgo] = useState(() => getRelativeTime(message.created_at))
   const isDeleted = message.is_deleted
 
-  // Use profile (new field name from fixed hook)
   const senderName = message.profile?.anonymous_name || 'Unknown'
   const avatarGradient = message.profile?.anonymous_name
     ? getAvatarGradient(message.profile.anonymous_name)
@@ -155,6 +192,16 @@ export default function MessageItem({
     !isDeleted &&
     Date.now() - new Date(message.created_at).getTime() < 10 * 60 * 1000
 
+  function handleBlockClick() {
+    setShowBlockConfirm(true)
+  }
+
+  function handleBlockConfirm() {
+    onBlock(message.user_id)
+    setShowBlockConfirm(false)
+    toast.success('User blocked. Their messages are now hidden.')
+  }
+
   if (isDeleted) {
     return (
       <div ref={messageRef} id={`msg-${message.id}`} className="px-4 py-1">
@@ -188,7 +235,7 @@ export default function MessageItem({
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      {/* Reply context — uses reply_message (new field name) */}
+      {/* Reply context */}
       {message.reply_message && (
         <div className={cn('flex items-center gap-2 mb-1', isOwn ? 'justify-end mr-10' : 'ml-10')}>
           <div className="w-1 h-4 rounded-full shrink-0 bg-[#A78BFA]" />
@@ -279,7 +326,7 @@ export default function MessageItem({
               )}
             >
               <p className="text-sm">
-                {message.content}
+                {highlightSearchText(message.content, searchQuery)}
                 {message.is_edited && (
                   <span className="text-[10px] text-[rgba(255,255,255,0.5)] ml-1">(edited)</span>
                 )}
@@ -313,7 +360,7 @@ export default function MessageItem({
       {/* Floating action bar */}
       {showActions && !isEditing && (
         <div
-          className={cn('absolute -top-8 z-50 animate-fade-in', isOwn ? 'right-4' : 'left-16')}
+          className={cn('absolute -top-9 z-50 animate-fade-in', isOwn ? 'right-4' : 'left-16')}
         >
           <div className="rounded-[13px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] shadow-xl px-1 py-0.5 backdrop-blur-[20px]">
             <ReactionBar
@@ -329,12 +376,31 @@ export default function MessageItem({
               onDelete={() => onDelete(message.id)}
               onPin={() => onPin(message.id)}
               onReport={() => onReport(message.id)}
-              onBlock={() => onBlock(message.user_id)}
-              onBookmark={() => onBookmark(message.id)}
+              onBlock={handleBlockClick}
             />
           </div>
         </div>
       )}
+
+      {/* Block confirmation dialog */}
+      <Dialog open={showBlockConfirm} onOpenChange={setShowBlockConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Block User</DialogTitle>
+            <DialogDescription>
+              Hide all messages from this person? Only you will see this.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowBlockConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleBlockConfirm}>
+              Block User
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

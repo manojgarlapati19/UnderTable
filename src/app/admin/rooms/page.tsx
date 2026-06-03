@@ -41,6 +41,7 @@ export default function AdminRoomsPage() {
     is_confession_box: false,
     message_ttl_hours: '' as string,
     slow_mode_seconds: '0',
+    room_password: '',
   })
 
   useEffect(() => {
@@ -77,6 +78,7 @@ export default function AdminRoomsPage() {
       is_confession_box: form.is_confession_box,
       message_ttl_hours: form.message_ttl_hours ? parseInt(form.message_ttl_hours) : null,
       slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
+      room_password: form.room_password || null,
       created_by: user.id,
     })
 
@@ -102,6 +104,7 @@ export default function AdminRoomsPage() {
         is_confession_box: form.is_confession_box,
         message_ttl_hours: form.message_ttl_hours ? parseInt(form.message_ttl_hours) : null,
         slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
+        room_password: form.room_password || null,
       })
       .eq('id', editingRoom.id)
 
@@ -139,6 +142,7 @@ export default function AdminRoomsPage() {
       is_confession_box: false,
       message_ttl_hours: '',
       slow_mode_seconds: '0',
+      room_password: '',
     })
   }
 
@@ -153,6 +157,7 @@ export default function AdminRoomsPage() {
       is_confession_box: room.is_confession_box,
       message_ttl_hours: room.message_ttl_hours?.toString() || '',
       slow_mode_seconds: room.slow_mode_seconds.toString(),
+      room_password: (room as any).room_password || '',
     })
   }
 
@@ -176,6 +181,7 @@ export default function AdminRoomsPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-white">{room.name}</span>
+                {(room as any).room_password && <Lock className="h-3 w-3 text-[#A78BFA]" />}
                 {room.is_private && <Lock className="h-3 w-3 text-[#56566E]" />}
                 {room.is_confession_box && <Flame className="h-3 w-3 text-orange-500" />}
               </div>
@@ -228,6 +234,15 @@ export default function AdminRoomsPage() {
                   <span className="text-xs text-[rgba(255,255,255,0.45)]">{form.accent_color}</span>
                 </div>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Room Passcode (optional)</Label>
+              <Input
+                type="password"
+                value={form.room_password}
+                onChange={(e) => setForm({ ...form, room_password: e.target.value })}
+                placeholder="leave empty for open room"
+              />
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">

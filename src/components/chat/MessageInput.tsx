@@ -7,6 +7,68 @@ import { Smile, Image, Send, X, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import ReplyPreview from './ReplyPreview'
 
+const EMOJI_CATEGORIES = [
+  {
+    name: 'Smileys',
+    icon: '😊',
+    emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🤩', '🥳', '😏', '😒'],
+  },
+  {
+    name: 'People',
+    icon: '👋',
+    emojis: ['👍', '👎', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👋', '🤚', '🖐️', '✋', '🖖', '💪', '🦾', '🙏', '🤝', '👏', '🙌', '🤲', '🫶', '❤️', '🧡', '💛', '💚', '💙', '💜'],
+  },
+  {
+    name: 'Animals',
+    icon: '🐶',
+    emojis: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🦆', '🦅', '🦉', '🦇', '🐝', '🦋', '🐛', '🐌', '🐞', '🐜', '🦟', '🦗'],
+  },
+  {
+    name: 'Food',
+    icon: '🍕',
+    emojis: ['🍕', '🍔', '🍟', '🌭', '🍿', '🧂', '🥓', '🥚', '🍳', '🧇', '🥞', '🧈', '🍞', '🥐', '🥖', '🫓', '🥨', '🧀', '🥗', '🥙', '🥪', '🌮', '🌯', '🫔', '🍜', '🍝', '🍛', '🍣', '🍱', '🍦', '🍰', '🎂', '🍩'],
+  },
+  {
+    name: 'Activities',
+    icon: '⚽',
+    emojis: ['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱', '🏓', '🏸', '🥊', '🎯', '🎳', '🎮', '🕹️', '🎲', '♟️', '🎭', '🎨', '🖼️', '🎪', '🎤', '🎧', '🎵', '🎶', '🎸', '🎹', '🥁', '🎺'],
+  },
+  {
+    name: 'Objects',
+    icon: '🚀',
+    emojis: ['💻', '📱', '⌨️', '🖥️', '🖨️', '🖱️', '💾', '💿', '📷', '📸', '📹', '🎥', '📞', '☎️', '📟', '📠', '📺', '📻', '🧭', '⏱️', '⏰', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '💰', '💳', '🔑', '🗝️'],
+  },
+  {
+    name: 'Nature',
+    icon: '🌍',
+    emojis: ['🌍', '🌎', '🌏', '🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘', '🌙', '🌚', '🌛', '🌜', '☀️', '🌝', '🌞', '🪐', '⭐', '🌟', '💫', '✨', '☄️', '🌤️', '⛅', '🌥️', '☁️', '🌦️', '🌧️', '⛈️', '🌩️'],
+  },
+  {
+    name: 'Symbols',
+    icon: '💯',
+    emojis: ['💯', '✅', '☑️', '✔️', '❌', '❎', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '🔺', '🔻', '💠', '🔷', '🔶', '🔹', '🔸', '▪️', '▫️', '🚫', '⛔', '📛', '🔞', '💢', '♨️', '🚷'],
+  },
+]
+
+const EMOJI_NAMES: Record<string, string> = {
+  '😀': 'grinning', '😃': 'smiley', '😄': 'smile', '😁': 'grin', '😆': 'laughing',
+  '😅': 'sweat_smile', '😂': 'joy', '🤣': 'rofl', '😊': 'blush', '😇': 'innocent',
+  '🙂': 'slight_smile', '🙃': 'upside_down', '😉': 'wink', '😌': 'relieved',
+  '😍': 'heart_eyes', '🥰': 'heart_eyes_adoration', '😘': 'kiss', '😗': 'kissing',
+  '😙': 'kissing_smiling_eyes', '😚': 'kissing_closed_eyes', '😋': 'yum',
+  '😛': 'stuck_out_tongue', '😝': 'stuck_out_tongue_winking_eye',
+  '😜': 'stuck_out_tongue_closed_eyes', '🤪': 'zany', '🤨': 'raised_eyebrow',
+  '🧐': 'face_with_monocle', '🤓': 'nerd', '😎': 'sunglasses',
+  '🥸': 'disguised_face', '🤩': 'star_struck', '🥳': 'partying_face',
+  '😏': 'smirk', '😒': 'unamused', '👍': 'thumbsup', '👎': 'thumbsdown',
+  '❤️': 'heart', '🧡': 'orange_heart', '💛': 'yellow_heart', '💚': 'green_heart',
+  '💙': 'blue_heart', '💜': 'purple_heart', '🔥': 'fire', '🎉': 'party',
+  '✨': 'sparkles', '🚀': 'rocket', '💪': 'muscle', '🙏': 'pray',
+  '👏': 'clap', '🙌': 'raised_hands', '🎶': 'notes', '⭐': 'star',
+  '🌈': 'rainbow', '🍕': 'pizza', '🎸': 'guitar', '🌟': 'glowing_star',
+  '👀': 'eyes', '💯': 'hundred',  '😮': 'open_mouth',
+}
+
 interface MessageInputProps {
   roomId: string
   roomName: string
@@ -40,7 +102,23 @@ export default function MessageInput({
   const [isSending, setIsSending] = useState(false)
   const [slowModeTimer, setSlowModeTimer] = useState(0)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [emojiCategory, setEmojiCategory] = useState(0)
+  const [emojiSearch, setEmojiSearch] = useState('')
+  const [recentEmojis, setRecentEmojis] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return JSON.parse(localStorage.getItem('recent_emojis') || '[]')
+      } catch { return [] }
+    }
+    return []
+  })
+  const [showMentionMenu, setShowMentionMenu] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState('')
+  const [mentionUsers, setMentionUsers] = useState<{ user_id: string; anonymous_name: string }[]>([])
+  const [mentionIndex, setMentionIndex] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
+  const mentionRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const supabase = createClient()
 
@@ -66,6 +144,32 @@ export default function MessageInput({
     }
   }, [slowModeTimer])
 
+  // Close emoji picker on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false)
+      }
+    }
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showEmojiPicker])
+
+  // Close mention menu on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (mentionRef.current && !mentionRef.current.contains(e.target as Node)) {
+        setShowMentionMenu(false)
+      }
+    }
+    if (showMentionMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMentionMenu])
+
   const emitTyping = useCallback(() => {
     onTypingChange?.(true)
   }, [onTypingChange])
@@ -77,6 +181,53 @@ export default function MessageInput({
       onTypingChange?.(false)
     }, 3000)
   }, [emitTyping, onTypingChange])
+
+  // @mention detection
+  function handleMentionDetection(value: string, cursorPos: number) {
+    const beforeCursor = value.slice(0, cursorPos)
+    const atMatch = beforeCursor.match(/@(\w*)$/)
+    if (atMatch) {
+      const query = atMatch[1].toLowerCase()
+      setMentionQuery(query)
+      setMentionIndex(0)
+
+      // Fetch users from profiles table matching the query
+      supabase
+        .from('profiles')
+        .select('id, anonymous_name')
+        .ilike('anonymous_name', `%${query}%`)
+        .limit(8)
+        .then(({ data }) => {
+          if (data) {
+            setMentionUsers(data.map(p => ({ user_id: p.id, anonymous_name: p.anonymous_name })))
+            setShowMentionMenu(data.length > 0)
+          }
+        })
+    } else {
+      setShowMentionMenu(false)
+    }
+  }
+
+  function insertMention(user: { anonymous_name: string }) {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const cursorPos = textarea.selectionStart
+    const beforeCursor = content.slice(0, cursorPos)
+    const afterCursor = content.slice(cursorPos)
+    const atIndex = beforeCursor.lastIndexOf('@')
+    const newContent = beforeCursor.slice(0, atIndex) + `@${user.anonymous_name} ` + afterCursor
+
+    setContent(newContent)
+    setShowMentionMenu(false)
+
+    // Set cursor position after the inserted mention
+    const newCursorPos = atIndex + user.anonymous_name.length + 2
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(newCursorPos, newCursorPos)
+    }, 0)
+  }
 
   async function handleSend() {
     const trimmed = content.trim()
@@ -100,20 +251,66 @@ export default function MessageInput({
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    if (showMentionMenu) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setMentionIndex((prev) => Math.min(prev + 1, mentionUsers.length - 1))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setMentionIndex((prev) => Math.max(prev - 1, 0))
+        return
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        if (mentionUsers[mentionIndex]) {
+          insertMention(mentionUsers[mentionIndex])
+        }
+        return
+      }
+      if (e.key === 'Escape') {
+        setShowMentionMenu(false)
+        return
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
     if (e.key === 'Escape') {
       onDismissReply()
+      setShowEmojiPicker(false)
     }
   }
 
   function insertEmoji(emoji: string) {
     setContent((prev) => prev + emoji)
-    setShowEmojiPicker(false)
+    setShowEmojiPicker(true) // Keep picker open for multiple selections
+
+    // Add to recent emojis
+    setRecentEmojis((prev) => {
+      const updated = [emoji, ...prev.filter((e) => e !== emoji)].slice(0, 8)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('recent_emojis', JSON.stringify(updated))
+      }
+      return updated
+    })
+
     textareaRef.current?.focus()
   }
+
+  // Filter emojis by search
+  const filteredCategories = EMOJI_CATEGORIES.map((cat) => ({
+    ...cat,
+    emojis: emojiSearch
+      ? cat.emojis.filter((e) => {
+          const name = EMOJI_NAMES[e] || ''
+          return name.includes(emojiSearch.toLowerCase()) || e.includes(emojiSearch)
+        })
+      : cat.emojis,
+  })).filter((cat) => cat.emojis.length > 0)
 
   if (isReadonly) {
     return (
@@ -176,19 +373,49 @@ export default function MessageInput({
           </div>
 
           {/* Text input */}
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => {
-              setContent(e.target.value)
-              handleInput()
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder={`Message as ${profileName}...`}
-            disabled={slowModeTimer > 0}
-            className="flex-1 resize-none bg-transparent px-1 py-1 text-sm text-white outline-none placeholder:text-[rgba(255,255,255,0.35)] disabled:opacity-50"
-            rows={1}
-          />
+          <div className="flex-1 relative">
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value)
+                handleInput()
+                handleMentionDetection(e.target.value, e.target.selectionStart)
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder={`Message as ${profileName}...`}
+              disabled={slowModeTimer > 0}
+              className="w-full resize-none bg-transparent px-1 py-1 text-sm text-white outline-none placeholder:text-[rgba(255,255,255,0.35)] disabled:opacity-50"
+              rows={1}
+            />
+
+            {/* @mention dropdown */}
+            {showMentionMenu && mentionUsers.length > 0 && (
+              <div
+                ref={mentionRef}
+                className="absolute bottom-full left-0 mb-1 z-50 w-56 rounded-[12px] border border-[rgba(255,255,255,0.12)] bg-[rgba(30,27,75,0.98)] backdrop-blur-[28px] shadow-xl overflow-hidden"
+              >
+                {mentionUsers.map((user, index) => (
+                  <button
+                    key={user.user_id}
+                    className={cn(
+                      'flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-100',
+                      index === mentionIndex
+                        ? 'bg-[rgba(167,139,250,0.2)] text-[#C4B5FD]'
+                        : 'text-white hover:bg-[rgba(255,255,255,0.06)]'
+                    )}
+                    onClick={() => insertMention(user)}
+                    onMouseEnter={() => setMentionIndex(index)}
+                  >
+                    <span className="h-6 w-6 rounded-full bg-[rgba(167,139,250,0.3)] flex items-center justify-center text-xs text-[#C4B5FD]">
+                      {user.anonymous_name.charAt(0)}
+                    </span>
+                    <span className="font-medium">@{user.anonymous_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Send button */}
           <button
@@ -206,22 +433,96 @@ export default function MessageInput({
         </div>
       </div>
 
-      {/* Emoji picker popover */}
+      {/* Expanded emoji picker */}
       {showEmojiPicker && (
-        <div className="absolute bottom-full left-4 mb-2 z-50">
-          <div className="rounded-[14px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.1)] backdrop-blur-[28px] shadow-xl p-2">
-            <div className="grid grid-cols-8 gap-1">
-              {['👍', '❤️', '😂', '🔥', '😮', '🎉', '🙏', '💯',
-                '✨', '🚀', '👀', '💪', '🤔', '😅', '🥳', '👏',
-                '🙌', '💜', '⭐', '🌈', '🦄', '🍕', '🎸', '🌟'].map((emoji) => (
+        <div
+          ref={emojiPickerRef}
+          className="absolute bottom-full left-4 mb-2 z-50 animate-slide-up"
+        >
+          <div className="w-[340px] rounded-[14px] border border-[rgba(255,255,255,0.12)] bg-[rgba(30,27,75,0.98)] backdrop-blur-[28px] shadow-2xl overflow-hidden">
+            {/* Search */}
+            <div className="p-2 border-b border-[rgba(255,255,255,0.08)]">
+              <input
+                type="text"
+                value={emojiSearch}
+                onChange={(e) => setEmojiSearch(e.target.value)}
+                placeholder="Search emojis..."
+                className="w-full rounded-[8px] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-xs text-white outline-none placeholder:text-[rgba(255,255,255,0.35)]"
+                autoFocus
+              />
+            </div>
+
+            {/* Category tabs */}
+            <div className="flex gap-0.5 px-2 py-1.5 overflow-x-auto border-b border-[rgba(255,255,255,0.08)]">
+              {EMOJI_CATEGORIES.map((cat, i) => (
                 <button
-                  key={emoji}
-                  onClick={() => insertEmoji(emoji)}
-                  className="h-8 w-8 flex items-center justify-center rounded-[8px] hover:bg-[rgba(255,255,255,0.1)] transition-colors duration-150 text-lg"
+                  key={cat.name}
+                  onClick={() => setEmojiCategory(i)}
+                  className={cn(
+                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] text-sm transition-all duration-150',
+                    i === emojiCategory && !emojiSearch
+                      ? 'bg-[rgba(167,139,250,0.2)]'
+                      : 'hover:bg-[rgba(255,255,255,0.08)]'
+                  )}
+                  title={cat.name}
                 >
-                  {emoji}
+                  {cat.icon}
                 </button>
               ))}
+            </div>
+
+            {/* Emoji grid */}
+            <div className="max-h-48 overflow-y-auto p-2">
+              {/* Recently used */}
+              {!emojiSearch && recentEmojis.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-[10px] text-[rgba(255,255,255,0.35)] uppercase tracking-wider mb-1 px-1">
+                    Recently Used
+                  </p>
+                  <div className="grid grid-cols-8 gap-0.5">
+                    {recentEmojis.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => insertEmoji(emoji)}
+                        className="h-8 w-8 flex items-center justify-center rounded-[8px] hover:bg-[rgba(255,255,255,0.1)] transition-colors duration-150 text-lg"
+                        title={EMOJI_NAMES[emoji] || emoji}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="h-px bg-[rgba(255,255,255,0.08)] mt-2" />
+                </div>
+              )}
+
+              {/* Category emojis */}
+              {(emojiSearch ? filteredCategories : [EMOJI_CATEGORIES[emojiCategory]]).map((cat) => (
+                <div key={cat.name} className="mb-1">
+                  {emojiSearch && (
+                    <p className="text-[10px] text-[rgba(255,255,255,0.35)] uppercase tracking-wider mb-1 px-1">
+                      {cat.icon} {cat.name}
+                    </p>
+                  )}
+                  <div className="grid grid-cols-8 gap-0.5">
+                    {cat.emojis.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => insertEmoji(emoji)}
+                        className="h-8 w-8 flex items-center justify-center rounded-[8px] hover:bg-[rgba(255,255,255,0.1)] transition-colors duration-150 text-lg"
+                        title={EMOJI_NAMES[emoji] || emoji}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {emojiSearch && filteredCategories.length === 0 && (
+                <p className="text-center text-xs text-[rgba(255,255,255,0.35)] py-4">
+                  No emojis found
+                </p>
+              )}
             </div>
           </div>
         </div>

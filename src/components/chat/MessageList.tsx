@@ -19,13 +19,14 @@ interface MessageListProps {
   isConfessionBox: boolean
   accentColor: string
   blockedUserIds: string[]
+  searchQuery?: string
+  isSearchOpen?: boolean
   onReply: (messageId: string) => void
   onEdit: (messageId: string, content: string) => void
   onDelete: (messageId: string) => void
   onPin: (messageId: string) => void
   onReport: (messageId: string) => void
   onBlock: (userId: string) => void
-  onBookmark: (messageId: string) => void
   onJumpToMessage: (messageId: string) => void
 }
 
@@ -38,13 +39,14 @@ export default function MessageList({
   isConfessionBox,
   accentColor,
   blockedUserIds,
+  searchQuery = '',
+  isSearchOpen = false,
   onReply,
   onEdit,
   onDelete,
   onPin,
   onReport,
   onBlock,
-  onBookmark,
   onJumpToMessage,
 }: MessageListProps) {
   const [polls, setPolls] = useState<Tables<'polls'>[]>([])
@@ -127,12 +129,20 @@ export default function MessageList({
     setHasNewMessages(false)
   }
 
+  // Filter messages by search query
+  const filteredMessages = isSearchOpen && searchQuery
+    ? messages.filter((m) =>
+        m.content.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : messages
+
+  const searchResultCount = filteredMessages.length
+
   // Merge messages and polls sorted by created_at
   const allItems = [
-    ...messages.map((m) => ({ type: 'message' as const, data: m, ts: new Date(m.created_at).getTime() })),
+    ...filteredMessages.map((m) => ({ type: 'message' as const, data: m, ts: new Date(m.created_at).getTime() })),
     ...polls.map((p) => ({ type: 'poll' as const, data: p, ts: new Date(p.created_at).getTime() })),
   ].sort((a, b) => a.ts - b.ts)
-
 
   if (loading) {
     return (
@@ -153,15 +163,28 @@ export default function MessageList({
   return (
     <div className="relative flex-1 flex flex-col overflow-hidden">
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        {/* Search results header */}
+        {isSearchOpen && searchQuery && (
+          <div className="px-4 py-2 border-b border-[rgba(255,255,255,0.08)]">
+            <p className="text-xs text-[rgba(255,255,255,0.45)]">
+              Found {searchResultCount} result{searchResultCount !== 1 ? 's' : ''} for "{searchQuery}"
+            </p>
+          </div>
+        )}
+
         {/* Empty state */}
-        {messages.length === 0 && (
+        {filteredMessages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="flex h-16 w-16 items-center justify-center rounded-[17px] bg-primary-gradient shadow-glow-sm mb-4">
               <span className="text-2xl">👻</span>
             </div>
-            <h3 className="text-lg font-medium text-white mb-1">No messages yet</h3>
+            <h3 className="text-lg font-medium text-white mb-1">
+              {isSearchOpen && searchQuery ? 'No results found' : 'No messages yet'}
+            </h3>
             <p className="text-sm text-[rgba(255,255,255,0.45)] max-w-xs">
-              Be the first to send a message in this room
+              {isSearchOpen && searchQuery
+                ? 'Try a different search term'
+                : 'Be the first to send a message in this room'}
             </p>
           </div>
         )}
@@ -197,25 +220,31 @@ export default function MessageList({
               !prevMsg ||
               (prevMsg as any).user_id !== msg.user_id ||
               item.ts - allItems[idx - 1].ts > 5 * 60 * 1000
+
+            // Dim non-matching messages when search is active
+            const isDimmed = isSearchOpen && searchQuery &&
+              !msg.content.toLowerCase().includes(searchQuery.toLowerCase())
+
             return (
-              <MessageItem
-                key={msg.id}
-                message={msg}
-                isOwn={msg.user_id === currentUserId}
-                isGroupStart={isGroupStart}
-                isAdmin={isAdmin}
-                isBlocked={blockedUserIds.includes(msg.user_id)}
-                isConfessionBox={isConfessionBox}
-                currentUserId={currentUserId}
-                onReply={onReply}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onPin={onPin}
-                onReport={onReport}
-                onBlock={onBlock}
-                onBookmark={onBookmark}
-                onJumpToMessage={onJumpToMessage}
-              />
+              <div key={msg.id} className={cn(isDimmed && 'opacity-40')}>
+                <MessageItem
+                  message={msg}
+                  isOwn={msg.user_id === currentUserId}
+                  isGroupStart={isGroupStart}
+                  isAdmin={isAdmin}
+                  isBlocked={blockedUserIds.includes(msg.user_id)}
+                  isConfessionBox={isConfessionBox}
+                  currentUserId={currentUserId}
+                  searchQuery={searchQuery}
+                  onReply={onReply}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onPin={onPin}
+                  onReport={onReport}
+                  onBlock={onBlock}
+                  onJumpToMessage={onJumpToMessage}
+                />
+              </div>
             )
           })}
         </div>

@@ -3,7 +3,6 @@
 import { cn } from '@/lib/utils/cn'
 import {
   Reply,
-  Bookmark,
   Flag,
   Pencil,
   Trash2,
@@ -27,7 +26,6 @@ interface ReactionBarProps {
   onPin: () => void
   onReport: () => void
   onBlock: () => void
-  onBookmark: () => void
 }
 
 export default function ReactionBar({
@@ -44,7 +42,6 @@ export default function ReactionBar({
   onPin,
   onReport,
   onBlock,
-  onBookmark,
 }: ReactionBarProps) {
   return (
     <div className="flex items-center gap-0.5">
@@ -64,19 +61,13 @@ export default function ReactionBar({
 
       <div className="w-px h-5 bg-[rgba(255,255,255,0.1)] mx-1" />
 
-      {[
-        { icon: Reply, action: onReply, title: 'Reply' },
-        { icon: Bookmark, action: onBookmark, title: 'Bookmark' },
-      ].map(({ icon: Icon, action, title }) => (
-        <button
-          key={title}
-          onClick={action}
-          className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white transition-all duration-150"
-          title={title}
-        >
-          <Icon className="h-3.5 w-3.5" />
-        </button>
-      ))}
+      <button
+        onClick={onReply}
+        className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.1)] hover:text-white transition-all duration-150"
+        title="Reply"
+      >
+        <Reply className="h-3.5 w-3.5" />
+      </button>
 
       {canEdit && (
         <button

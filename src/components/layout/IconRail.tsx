@@ -4,9 +4,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   MessageSquare,
-  Flame,
-  Trophy,
-  Bookmark,
   Search,
   Settings,
   LogOut,
@@ -59,40 +56,16 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
           <MessageSquare className="h-5 w-5" />
         </Link>
         <Link
-          href="/chat?view=hot"
+          href="/search"
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
-            pathname === '/chat'
+            isActive('/search')
               ? 'bg-[rgba(255,255,255,0.18)] text-white'
               : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
           )}
-          title="Hot Topics"
+          title="Search"
         >
-          <Flame className="h-5 w-5" />
-        </Link>
-        <Link
-          href="/chat?view=leaderboard"
-          className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
-            pathname === '/chat'
-              ? 'bg-[rgba(255,255,255,0.18)] text-white'
-              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
-          )}
-          title="Leaderboard"
-        >
-          <Trophy className="h-5 w-5" />
-        </Link>
-        <Link
-          href="/bookmarks"
-          className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
-            isActive('/bookmarks')
-              ? 'bg-[rgba(255,255,255,0.18)] text-white'
-              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
-          )}
-          title="Bookmarks"
-        >
-          <Bookmark className="h-5 w-5" />
+          <Search className="h-5 w-5" />
         </Link>
         <Link
           href="/search"

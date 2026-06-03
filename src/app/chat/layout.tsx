@@ -33,10 +33,6 @@ export default function ChatLayout({
         e.preventDefault()
         router.push('/search')
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault()
-        router.push('/bookmarks')
-      }
     },
     [router]
   )
