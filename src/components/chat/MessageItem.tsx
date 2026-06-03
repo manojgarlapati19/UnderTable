@@ -313,7 +313,7 @@ export default function MessageItem({
       {/* Floating action bar */}
       {showActions && !isEditing && (
         <div
-          className={cn('absolute -top-4 z-10 animate-fade-in', isOwn ? 'right-4' : 'left-16')}
+          className={cn('absolute -top-8 z-50 animate-fade-in', isOwn ? 'right-4' : 'left-16')}
         >
           <div className="rounded-[13px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] shadow-xl px-1 py-0.5 backdrop-blur-[20px]">
             <ReactionBar

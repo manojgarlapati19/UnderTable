@@ -7,6 +7,7 @@ import {
   Plus,
   Lock,
   Flame,
+  Settings,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/cn'
@@ -174,8 +175,16 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
           </div>
         </ScrollArea>
 
-        {/* Bottom hint */}
-        <div className="px-4 py-3">
+        {/* Bottom section */}
+        <div className="px-3 py-3 space-y-2">
+          <button
+            onClick={onOpenSettings}
+            className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.06)] hover:text-white transition-all duration-150"
+            title="Settings"
+          >
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
+          </button>
           <p className="text-[10px] text-[rgba(255,255,255,0.35)] text-center">
             What happens UnderTable, stays UnderTable.
           </p>
