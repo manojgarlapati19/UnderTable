@@ -362,7 +362,7 @@ export default function MessageItem({
         <div
           className={cn('absolute -top-9 z-50 animate-fade-in', isOwn ? 'right-4' : 'left-16')}
         >
-          <div className="rounded-[13px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] shadow-xl px-1 py-0.5 backdrop-blur-[20px]">
+          <div className="rounded-[13px] border border-[rgba(255,255,255,0.2)] bg-[rgba(15,10,40,0.92)] shadow-xl px-1 py-0.5 backdrop-blur-[20px] flex items-center">
             <ReactionBar
               messageId={message.id}
               userId={currentUserId}
