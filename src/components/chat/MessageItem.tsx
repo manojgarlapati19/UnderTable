@@ -98,6 +98,7 @@ export default function MessageItem({
   onJumpToMessage,
 }: MessageItemProps) {
   const [showActions, setShowActions] = useState(false)
+  const [showBelow, setShowBelow] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content)
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
@@ -131,6 +132,13 @@ export default function MessageItem({
       messageRef.current.classList.add('message-highlight')
     }
   }, [message.id])
+
+  useEffect(() => {
+    if (showActions && messageRef.current) {
+      const rect = messageRef.current.getBoundingClientRect()
+      setShowBelow(rect.top < 80)
+    }
+  }, [showActions])
 
   function handleSaveEdit() {
     if (editContent.trim() && editContent !== message.content) {
@@ -229,7 +237,7 @@ export default function MessageItem({
       ref={messageRef}
       id={`msg-${message.id}`}
       className={cn(
-        'group relative px-4 py-0.5 transition-colors duration-150',
+        'group relative px-4 py-0.5 transition-all duration-150 group-hover:pt-8',
         isOwn ? 'hover:bg-transparent' : 'hover:bg-[rgba(255,255,255,0.02)]'
       )}
       onMouseEnter={() => setShowActions(true)}
@@ -360,7 +368,11 @@ export default function MessageItem({
       {/* Floating action bar */}
       {showActions && !isEditing && (
         <div
-          className={cn('absolute -top-9 z-50 animate-fade-in', isOwn ? 'right-4' : 'left-16')}
+          className={cn(
+            'absolute z-50 animate-fade-in',
+            showBelow ? 'top-full mt-1' : '-top-9',
+            isOwn ? 'right-4' : 'left-16'
+          )}
         >
           <div className="rounded-[13px] border border-[rgba(255,255,255,0.2)] bg-[rgba(15,10,40,0.92)] shadow-xl px-1 py-0.5 backdrop-blur-[20px] flex items-center">
             <ReactionBar
