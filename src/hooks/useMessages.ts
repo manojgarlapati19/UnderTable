@@ -2,53 +2,100 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Tables } from '@/lib/supabase/database.types'
 
-interface UseMessagesOptions {
-  roomId: string
-  limit?: number
+export interface SimpleMessage {
+  id: string
+  room_id: string
+  user_id: string
+  content: string
+  reply_to: string | null
+  is_edited: boolean
+  is_deleted: boolean
+  is_pinned: boolean
+  is_flagged: boolean
+  expires_at: string | null
+  created_at: string
+  updated_at: string
+  sender_name: string
+  sender_color: string
+  reply_content: string | null
+  reactions: Array<{ id: string; emoji: string; user_id: string }>
 }
 
-interface MessageWithRelations extends Tables<'messages'> {
-  profile: { anonymous_name: string; avatar_color: string } | null
-  reactions: Array<{
-    id: string
-    emoji: string
-    user_id: string
-  }>
-  reply_message: {
-    content: string
-    profile: { anonymous_name: string } | null
-  } | null
-}
-
-export function useMessages({ roomId, limit = 100 }: UseMessagesOptions) {
-  const [messages, setMessages] = useState<MessageWithRelations[]>([])
+export function useMessages({ roomId, limit = 100 }: { roomId: string; limit?: number }) {
+  const [messages, setMessages] = useState<SimpleMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const supabase = useRef(createClient()).current
 
-  const MESSAGE_SELECT = `
-    *,
-    profile:profiles!messages_user_id_fkey(anonymous_name, avatar_color),
-    reactions(id, emoji, user_id),
-    reply_message:messages!messages_reply_to_fkey(id, content)
-  `
-
   const fetchMessages = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
-      const { data, error: fetchError } = await supabase
+      // Step 1: fetch raw messages
+      const { data: msgs, error: msgErr } = await supabase
         .from('messages')
-        .select(MESSAGE_SELECT)
+        .select('*')
         .eq('room_id', roomId)
         .eq('is_deleted', false)
         .order('created_at', { ascending: true })
         .limit(limit)
 
-      if (fetchError) throw fetchError
-      setMessages((data as MessageWithRelations[]) || [])
+      if (msgErr) throw msgErr
+      if (!msgs || msgs.length === 0) {
+        setMessages([])
+        return
+      }
+
+      // Step 2: fetch profiles for all senders
+      const userIds = [...new Set(msgs.map((m) => m.user_id))]
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, anonymous_name, avatar_color')
+        .in('id', userIds)
+
+      const profileMap = new Map(
+        (profiles || []).map((p) => [p.id, p])
+      )
+
+      // Step 3: fetch reactions
+      const msgIds = msgs.map((m) => m.id)
+      const { data: reactions } = await supabase
+        .from('reactions')
+        .select('id, emoji, user_id, message_id')
+        .in('message_id', msgIds)
+
+      const reactionsMap = new Map<string, Array<{ id: string; emoji: string; user_id: string }>>()
+      for (const r of reactions || []) {
+        if (!reactionsMap.has(r.message_id)) reactionsMap.set(r.message_id, [])
+        reactionsMap.get(r.message_id)!.push({ id: r.id, emoji: r.emoji, user_id: r.user_id })
+      }
+
+      // Step 4: fetch reply messages
+      const replyIds = msgs.filter((m) => m.reply_to).map((m) => m.reply_to!)
+      const replyMap = new Map<string, string>()
+      if (replyIds.length > 0) {
+        const { data: replyMsgs } = await supabase
+          .from('messages')
+          .select('id, content')
+          .in('id', replyIds)
+        for (const r of replyMsgs || []) {
+          replyMap.set(r.id, r.content)
+        }
+      }
+
+      // Step 5: assemble
+      const assembled: SimpleMessage[] = msgs.map((m) => ({
+        ...m,
+        sender_name: profileMap.get(m.user_id)?.anonymous_name || 'Unknown',
+        sender_color: profileMap.get(m.user_id)?.avatar_color || '#7C3AED',
+        reply_content: m.reply_to ? (replyMap.get(m.reply_to) || null) : null,
+        reactions: reactionsMap.get(m.id) || [],
+      }))
+
+      setMessages(assembled)
     } catch (err) {
+      console.error('Failed to load messages:', err)
       setError(err instanceof Error ? err.message : 'Failed to load messages')
     } finally {
       setLoading(false)
@@ -59,153 +106,59 @@ export function useMessages({ roomId, limit = 100 }: UseMessagesOptions) {
     fetchMessages()
 
     const channel = supabase
-      .channel(`messages-${roomId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${roomId}`,
-        },
-        async (payload) => {
-          const { data } = await supabase
-            .from('messages')
-            .select(MESSAGE_SELECT)
-            .eq('id', payload.new.id)
-            .single()
-
-          if (data) {
-            setMessages((prev) => [...prev, data as MessageWithRelations])
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${roomId}`,
-        },
-        async (payload) => {
-          const { data } = await supabase
-            .from('messages')
-            .select(MESSAGE_SELECT)
-            .eq('id', payload.new.id)
-            .single()
-
-          if (data) {
-            setMessages((prev) =>
-              prev.map((m) => (m.id === payload.new.id ? (data as MessageWithRelations) : m))
-            )
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${roomId}`,
-        },
-        (payload) => {
-          setMessages((prev) => prev.filter((m) => m.id !== payload.old.id))
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'reactions' },
-        async (payload) => {
-          const { data } = await supabase
-            .from('messages')
-            .select(MESSAGE_SELECT)
-            .eq('id', payload.new.message_id)
-            .single()
-
-          if (data) {
-            setMessages((prev) =>
-              prev.map((m) => (m.id === data.id ? (data as MessageWithRelations) : m))
-            )
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'reactions' },
-        (payload) => {
-          setMessages((prev) =>
-            prev.map((m) => {
-              if (m.id === payload.old.message_id) {
-                return {
-                  ...m,
-                  reactions: m.reactions?.filter((r) => r.id !== payload.old.id) || [],
-                }
-              }
-              return m
-            })
-          )
-        }
-      )
+      .channel(`room-messages-${roomId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messages',
+        filter: `room_id=eq.${roomId}`,
+      }, () => {
+        fetchMessages()
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'reactions',
+      }, () => {
+        fetchMessages()
+      })
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [roomId, fetchMessages, supabase])
 
-  const sendMessage = useCallback(
-    async (content: string, replyTo?: string | null, expiresAt?: string | null) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
+  const sendMessage = useCallback(async (
+    content: string,
+    replyTo?: string | null
+  ) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
 
-      const { error: sendError } = await supabase.from('messages').insert({
-        room_id: roomId,
-        user_id: user.id,
-        content,
-        reply_to: replyTo || null,
-        expires_at: expiresAt || null,
-      })
+    const { error } = await supabase.from('messages').insert({
+      room_id: roomId,
+      user_id: user.id,
+      content,
+      reply_to: replyTo || null,
+    })
 
-      if (sendError) throw sendError
-    },
-    [roomId, supabase]
-  )
+    if (error) throw error
+  }, [roomId, supabase])
 
-  const editMessage = useCallback(
-    async (messageId: string, content: string) => {
-      const { error: editError } = await supabase
-        .from('messages')
-        .update({ content, is_edited: true, updated_at: new Date().toISOString() })
-        .eq('id', messageId)
+  const editMessage = useCallback(async (messageId: string, content: string) => {
+    const { error } = await supabase
+      .from('messages')
+      .update({ content, is_edited: true })
+      .eq('id', messageId)
+    if (error) throw error
+  }, [supabase])
 
-      if (editError) throw editError
-    },
-    [supabase]
-  )
+  const deleteMessage = useCallback(async (messageId: string) => {
+    const { error } = await supabase
+      .from('messages')
+      .update({ is_deleted: true })
+      .eq('id', messageId)
+    if (error) throw error
+  }, [supabase])
 
-  const deleteMessage = useCallback(
-    async (messageId: string) => {
-      const { error: deleteError } = await supabase
-        .from('messages')
-        .update({ is_deleted: true, content: 'this message was removed' })
-        .eq('id', messageId)
-
-      if (deleteError) throw deleteError
-    },
-    [supabase]
-  )
-
-  return {
-    messages,
-    loading,
-    error,
-    sendMessage,
-    editMessage,
-    deleteMessage,
-    refresh: fetchMessages,
-  }
+  return { messages, loading, error, sendMessage, editMessage, deleteMessage, refresh: fetchMessages }
 }
