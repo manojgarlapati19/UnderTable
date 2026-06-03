@@ -112,6 +112,7 @@ export default function MessageInput({
     }
     return []
   })
+  console.log('replyTo prop:', replyTo)
   const [showMentionMenu, setShowMentionMenu] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionUsers, setMentionUsers] = useState<{ user_id: string; anonymous_name: string }[]>([])
@@ -324,13 +325,15 @@ export default function MessageInput({
 
   return (
     <div className="relative border-t border-[rgba(255,255,255,0.08)]">
-      {/* Reply preview */}
+      {/* Reply preview — clearly visible above input */}
       {replyTo && (
-        <ReplyPreview
-          senderName={replyTo.senderName}
-          content={replyTo.content}
-          onDismiss={onDismissReply}
-        />
+        <div className="px-4 pt-2">
+          <ReplyPreview
+            senderName={replyTo.senderName}
+            content={replyTo.content}
+            onDismiss={onDismissReply}
+          />
+        </div>
       )}
 
       {/* Slow mode indicator */}
