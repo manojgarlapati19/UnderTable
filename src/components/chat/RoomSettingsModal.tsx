@@ -88,7 +88,7 @@ export default function RoomSettingsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px]">
+      <DialogContent className="sm:max-w-[450px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span>{room.icon_emoji}</span>
@@ -99,7 +99,8 @@ export default function RoomSettingsModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5">
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
           {/* Room Info Section */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-white flex items-center gap-2">
@@ -222,8 +223,10 @@ export default function RoomSettingsModal({
             </>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 pt-2">
+        </div>
+
+          {/* Sticky footer */}
+          <div className="sticky bottom-0 bg-[rgba(255,255,255,0.08)] backdrop-blur-[28px] border-t border-[rgba(255,255,255,0.08)] px-6 py-4 flex justify-end gap-3">
             <Button
               variant="outline"
               size="sm"
@@ -245,7 +248,6 @@ export default function RoomSettingsModal({
               </Button>
             )}
           </div>
-        </div>
       </DialogContent>
     </Dialog>
   )
