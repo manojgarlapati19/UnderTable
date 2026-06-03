@@ -32,10 +32,7 @@ export function useMessages({ roomId, limit = 100 }: UseMessagesOptions) {
     *,
     profile:profiles!messages_user_id_fkey(anonymous_name, avatar_color),
     reactions(id, emoji, user_id),
-    reply_message:messages!messages_reply_to_fkey(
-      content,
-      profile:profiles!messages_user_id_fkey(anonymous_name)
-    )
+    reply_message:messages!messages_reply_to_fkey(id, content)
   `
 
   const fetchMessages = useCallback(async () => {
