@@ -29,18 +29,32 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
 
   useEffect(() => {
     const channel = supabase.channel('online-users', {
-      config: {
-        presence: {
-          key: 'online-users',
-        },
-      },
+      config: { presence: { key: 'online-users' } },
     })
+
+    let idleTimer: NodeJS.Timeout
+    let trackedState: Record<string, any> = {}
+
+    const resetIdle = () => {
+      clearTimeout(idleTimer)
+      idleTimer = setTimeout(async () => {
+        if (Object.keys(trackedState).length > 0) {
+          await channel.track({ ...trackedState, is_idle: true })
+        }
+      }, 2 * 60 * 1000)
+    }
+
+    const handleActivity = () => {
+      if (Object.keys(trackedState).length > 0) {
+        channel.track({ ...trackedState, is_idle: false, last_seen: new Date().toISOString() })
+      }
+      resetIdle()
+    }
 
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState()
         const users: OnlineUser[] = []
-
         for (const key in state) {
           const presences = state[key] as any[]
           if (presences && presences.length > 0) {
@@ -56,7 +70,6 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
             })
           }
         }
-
         setOnlineUsers(users)
       })
       .subscribe(async (status) => {
@@ -71,7 +84,7 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
             .single()
 
           if (profile) {
-            await channel.track({
+            trackedState = {
               user_id: user.id,
               anonymous_name: profile.anonymous_name,
               avatar_color: profile.avatar_color,
@@ -79,26 +92,19 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
               ghost_mode: profile.ghost_mode,
               last_seen: new Date().toISOString(),
               is_idle: false,
-            })
+            }
+            await channel.track(trackedState)
+            resetIdle()
           }
         }
       })
 
-    let idleTimer: NodeJS.Timeout
-    const resetIdle = () => {
-      clearTimeout(idleTimer)
-      idleTimer = setTimeout(async () => {
-        await channel.track({ is_idle: true })
-      }, 2 * 60 * 1000)
-    }
-
     const events = ['mousedown', 'keydown', 'mousemove', 'touchstart']
-    events.forEach((event) => window.addEventListener(event, resetIdle))
-    resetIdle()
+    events.forEach((event) => window.addEventListener(event, handleActivity))
 
     return () => {
       channel.unsubscribe()
-      events.forEach((event) => window.removeEventListener(event, resetIdle))
+      events.forEach((event) => window.removeEventListener(event, handleActivity))
       clearTimeout(idleTimer)
     }
   }, [currentRoomId])

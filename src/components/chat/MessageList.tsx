@@ -12,13 +12,15 @@ import type { Tables } from '@/lib/supabase/database.types'
 
 interface MessageListProps {
   roomId: string
+  messages: any[]
+  loading: boolean
   currentUserId: string
   isAdmin: boolean
   isConfessionBox: boolean
   accentColor: string
   blockedUserIds: string[]
   onReply: (messageId: string) => void
-  onEdit: (messageId: string) => void
+  onEdit: (messageId: string, content: string) => void
   onDelete: (messageId: string) => void
   onPin: (messageId: string) => void
   onReport: (messageId: string) => void
@@ -29,6 +31,8 @@ interface MessageListProps {
 
 export default function MessageList({
   roomId,
+  messages,
+  loading,
   currentUserId,
   isAdmin,
   isConfessionBox,
@@ -43,24 +47,20 @@ export default function MessageList({
   onBookmark,
   onJumpToMessage,
 }: MessageListProps) {
-  const [messages, setMessages] = useState<any[]>([])
   const [polls, setPolls] = useState<Tables<'polls'>[]>([])
   const [typingUsers, setTypingUsers] = useState<string[]>([])
   const [hasNewMessages, setHasNewMessages] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const isScrolledUpRef = useRef(false)
   const supabase = createClient()
 
   useEffect(() => {
-    loadMessages()
     loadPolls()
-    subscribeToMessages()
-    subscribeToTyping()
+    const cleanup = subscribeToTyping()
 
     return () => {
-      supabase.removeAllChannels()
+      cleanup()
     }
   }, [roomId])
 
@@ -88,30 +88,6 @@ export default function MessageList({
     return () => el.removeEventListener('scroll', handleScroll)
   }, [])
 
-  async function loadMessages() {
-    const { data } = await supabase
-      .from('messages')
-      .select(`
-        *,
-        profiles!inner(anonymous_name, avatar_color),
-        reactions(
-          id, emoji, user_id,
-          profiles!inner(anonymous_name)
-        ),
-        reply_to_message:messages!messages_reply_to_fkey(
-          content,
-          profiles!inner(anonymous_name)
-        )
-      `)
-      .eq('room_id', roomId)
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: true })
-      .limit(100)
-
-    if (data) setMessages(data)
-    setIsLoading(false)
-  }
-
   async function loadPolls() {
     const { data } = await supabase
       .from('polls')
@@ -122,78 +98,9 @@ export default function MessageList({
     if (data) setPolls(data)
   }
 
-  function subscribeToMessages() {
-    const channel = supabase
-      .channel(`messages-${roomId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${roomId}`,
-        },
-        async (payload) => {
-          const { data } = await supabase
-            .from('messages')
-            .select(`
-              *,
-              profiles!inner(anonymous_name, avatar_color),
-              reactions(
-                id, emoji, user_id,
-                profiles!inner(anonymous_name)
-              ),
-              reply_to_message:messages!messages_reply_to_fkey(
-                content,
-                profiles!inner(anonymous_name)
-              )
-            `)
-            .eq('id', payload.new.id)
-            .single()
-
-          if (data) {
-            setMessages((prev) => [...prev, data])
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${roomId}`,
-        },
-        (payload) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === payload.new.id ? { ...m, ...payload.new } : m
-            )
-          )
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${roomId}`,
-        },
-        (payload) => {
-          setMessages((prev) => prev.filter((m) => m.id !== payload.old.id))
-        }
-      )
-      .subscribe()
-  }
-
   function subscribeToTyping() {
-    const channel = supabase.channel(`room:${roomId}`, {
-      config: {
-        presence: {
-          key: 'typing-status',
-        },
-      },
+    const channel = supabase.channel(`typing:${roomId}`, {
+      config: { presence: { key: `typing-${roomId}` } },
     })
 
     channel
@@ -202,15 +109,17 @@ export default function MessageList({
         const typing: string[] = []
         for (const key in state) {
           const presences = state[key] as any[]
-          if (presences?.length > 0 && presences[0].typing && presences[0].user !== currentUserId) {
-            typing.push(presences[0].user)
-          }
+          presences?.forEach((p) => {
+            if (p.typing && p.user_id !== currentUserId && p.anonymous_name) {
+              typing.push(p.anonymous_name)
+            }
+          })
         }
         setTypingUsers(typing)
       })
       .subscribe()
 
-    return () => { channel.unsubscribe() }
+    return () => { supabase.removeChannel(channel) }
   }
 
   function scrollToBottom() {
@@ -218,18 +127,14 @@ export default function MessageList({
     setHasNewMessages(false)
   }
 
-  const groupedMessages = messages.reduce((groups: any[], msg, index) => {
-    const prevMsg = index > 0 ? messages[index - 1] : null
-    const isGroupStart =
-      !prevMsg ||
-      prevMsg.user_id !== msg.user_id ||
-      new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 5 * 60 * 1000
+  // Merge messages and polls sorted by created_at
+  const allItems = [
+    ...messages.map((m) => ({ type: 'message' as const, data: m, ts: new Date(m.created_at).getTime() })),
+    ...polls.map((p) => ({ type: 'poll' as const, data: p, ts: new Date(p.created_at).getTime() })),
+  ].sort((a, b) => a.ts - b.ts)
 
-    groups.push({ message: msg, isGroupStart })
-    return groups
-  }, [])
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex-1 p-4 space-y-4 overflow-hidden">
         {[1, 2, 3, 4, 5].map((i) => (
@@ -270,39 +175,49 @@ export default function MessageList({
           </div>
         )}
 
-        {/* Messages */}
+        {/* Messages and polls interleaved by timestamp */}
         <div className="py-2">
-          {groupedMessages.map(({ message, isGroupStart }) => (
-            <MessageItem
-              key={message.id}
-              message={message}
-              isOwn={message.user_id === currentUserId}
-              isGroupStart={isGroupStart}
-              isAdmin={isAdmin}
-              isBlocked={blockedUserIds.includes(message.user_id)}
-              isConfessionBox={isConfessionBox}
-              currentUserId={currentUserId}
-              onReply={onReply}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onPin={onPin}
-              onReport={onReport}
-              onBlock={onBlock}
-              onBookmark={onBookmark}
-              onJumpToMessage={onJumpToMessage}
-            />
-          ))}
-
-          {/* Polls */}
-          {polls.map((poll) => (
-            <div key={poll.id} className="px-4 py-2">
-              <PollCard
-                poll={poll}
+          {allItems.map((item, idx) => {
+            if (item.type === 'poll') {
+              return (
+                <div key={`poll-${item.data.id}`} className="px-4 py-2">
+                  <PollCard
+                    poll={item.data}
+                    isAdmin={isAdmin}
+                    currentUserId={currentUserId}
+                  />
+                </div>
+              )
+            }
+            const msg = item.data
+            const prevMsg = idx > 0 && allItems[idx - 1].type === 'message'
+              ? allItems[idx - 1].data
+              : null
+            const isGroupStart =
+              !prevMsg ||
+              (prevMsg as any).user_id !== msg.user_id ||
+              item.ts - allItems[idx - 1].ts > 5 * 60 * 1000
+            return (
+              <MessageItem
+                key={msg.id}
+                message={msg}
+                isOwn={msg.user_id === currentUserId}
+                isGroupStart={isGroupStart}
                 isAdmin={isAdmin}
+                isBlocked={blockedUserIds.includes(msg.user_id)}
+                isConfessionBox={isConfessionBox}
                 currentUserId={currentUserId}
+                onReply={onReply}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onPin={onPin}
+                onReport={onReport}
+                onBlock={onBlock}
+                onBookmark={onBookmark}
+                onJumpToMessage={onJumpToMessage}
               />
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Typing indicator */}

@@ -37,7 +37,8 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
 
   useEffect(() => {
     loadVotes()
-    subscribeToVotes()
+    const cleanup = subscribeToVotes()
+    return cleanup
   }, [poll.id])
 
   async function loadVotes() {

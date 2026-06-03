@@ -11,6 +11,8 @@ export default function PendingPage() {
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval>
+
     const checkStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -36,7 +38,7 @@ export default function PendingPage() {
 
       setChecking(false)
 
-      const interval = setInterval(async () => {
+      interval = setInterval(async () => {
         const { data: updatedProfile } = await supabase
           .from('profiles')
           .select('status')
@@ -48,11 +50,10 @@ export default function PendingPage() {
           router.push('/chat')
         }
       }, 10000)
-
-      return () => clearInterval(interval)
     }
 
     checkStatus()
+    return () => { if (interval) clearInterval(interval) }
   }, [router, supabase])
 
   if (checking) {

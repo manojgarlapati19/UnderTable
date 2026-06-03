@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils/cn'
 import { getRelativeTime, getFullTimestamp } from '@/lib/utils/time'
 import { getAvatarColor, getAvatarGradient } from '@/lib/utils/avatar-color'
@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import ReactionBar from './ReactionBar'
 import ReactionPill from './ReactionPill'
 import ReadReceipts from './ReadReceipts'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +31,7 @@ interface MessageItemProps {
   isConfessionBox: boolean
   currentUserId: string
   onReply: (messageId: string) => void
-  onEdit: (messageId: string) => void
+  onEdit: (messageId: string, content: string) => void
   onDelete: (messageId: string) => void
   onPin: (messageId: string) => void
   onReport: (messageId: string) => void
@@ -58,7 +60,7 @@ export default function MessageItem({
   const [showActions, setShowActions] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content)
-  const editRef = useRef<HTMLInputElement>(null)
+  const editRef = useRef<HTMLTextAreaElement>(null)
   const messageRef = useRef<HTMLDivElement>(null)
   const [timeAgo, setTimeAgo] = useState(() => getRelativeTime(message.created_at))
   const isDeleted = message.is_deleted
@@ -89,6 +91,7 @@ export default function MessageItem({
 
   function handleSaveEdit() {
     if (editContent.trim() && editContent !== message.content) {
+      onEdit(message.id, editContent.trim())
     }
     setIsEditing(false)
   }
@@ -97,6 +100,8 @@ export default function MessageItem({
     setEditContent(message.content)
     setIsEditing(false)
   }
+
+  const supabase = createClient()
 
   const reactionGroups = message.reactions?.reduce<Record<string, { count: number; hasReacted: boolean; names: string[] }>>((acc, r) => {
     if (!acc[r.emoji]) {
@@ -107,6 +112,36 @@ export default function MessageItem({
     if (r.profiles?.anonymous_name) acc[r.emoji].names.push(r.profiles.anonymous_name)
     return acc
   }, {}) || {}
+
+  const userReactedEmojis = new Set(
+    message.reactions?.filter((r) => r.user_id === currentUserId).map((r) => r.emoji) || []
+  )
+
+  const handleReactionToggle = useCallback(
+    async (emoji: string) => {
+      const hasReacted = userReactedEmojis.has(emoji)
+      try {
+        if (hasReacted) {
+          await supabase
+            .from('reactions')
+            .delete()
+            .eq('message_id', message.id)
+            .eq('user_id', currentUserId)
+            .eq('emoji', emoji)
+        } else {
+          const { error } = await supabase.from('reactions').insert({
+            message_id: message.id,
+            user_id: currentUserId,
+            emoji,
+          })
+          if (error && error.code !== '23505') throw error
+        }
+      } catch {
+        toast.error('Failed to update reaction')
+      }
+    },
+    [message.id, currentUserId, userReactedEmojis, supabase]
+  )
 
   const canEdit = isOwn && !isDeleted && (Date.now() - new Date(message.created_at).getTime() < 10 * 60 * 1000)
 
@@ -196,15 +231,16 @@ export default function MessageItem({
           {/* Message bubble */}
           {isEditing ? (
             <div className="flex items-center gap-2 w-full">
-              <input
+              <textarea
                 ref={editRef}
                 value={editContent}
+                rows={1}
                 onChange={(e) => setEditContent(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveEdit()
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveEdit() }
                   if (e.key === 'Escape') handleCancelEdit()
                 }}
-                className="flex-1 rounded-[12px] border border-accent bg-[#13131F] px-3 py-1.5 text-sm text-white outline-none"
+                className="flex-1 rounded-[12px] border border-accent bg-[#13131F] px-3 py-1.5 text-sm text-white outline-none resize-none"
               />
               <button onClick={handleSaveEdit} className="text-xs text-accent font-medium hover:underline">
                 Save
@@ -241,7 +277,7 @@ export default function MessageItem({
                   count={count}
                   hasReacted={hasReacted}
                   reactorNames={names}
-                  onToggle={() => {}}
+                  onToggle={() => handleReactionToggle(emoji)}
                 />
               ))}
             </div>
@@ -264,9 +300,11 @@ export default function MessageItem({
             <ReactionBar
               messageId={message.id}
               userId={currentUserId}
+              userReactedEmojis={userReactedEmojis}
               isOwn={isOwn}
               canEdit={canEdit}
               isAdmin={isAdmin}
+              onReact={handleReactionToggle}
               onReply={() => onReply(message.id)}
               onEdit={() => setIsEditing(true)}
               onDelete={() => onDelete(message.id)}

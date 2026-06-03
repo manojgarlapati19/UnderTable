@@ -34,13 +34,14 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   const [showPollModal, setShowPollModal] = useState(false)
   const [showGifModal, setShowGifModal] = useState(false)
   const [blockedUserIds, setBlockedUserIds] = useState<string[]>([])
-  const [onlineCount, setOnlineCount] = useState(0)
 
-  const { messages, sendMessage, editMessage, deleteMessage } = useMessages({
+  const { messages, loading: messagesLoading, sendMessage, editMessage, deleteMessage } = useMessages({
     roomId: params.roomId,
   })
 
-  const { updateCurrentRoom, setTyping } = usePresence()
+  const { updateCurrentRoom, setTyping, visibleUsers } = usePresence()
+
+  const onlineCount = visibleUsers.filter((u) => u.current_room === params.roomId).length
 
   useEffect(() => {
     loadRoom()
@@ -113,15 +114,24 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   )
 
   const handleEdit = useCallback(
-    async (messageId: string) => {
+    async (messageId: string, content: string) => {
+      try {
+        await editMessage(messageId, content)
+      } catch {
+        toast.error('Failed to edit message')
+      }
     },
-    []
+    [editMessage]
   )
 
   const handleDelete = useCallback(
     async (messageId: string) => {
       if (confirm('Delete this message?')) {
-        await deleteMessage(messageId)
+        try {
+          await deleteMessage(messageId)
+        } catch {
+          toast.error('Failed to delete message')
+        }
       }
     },
     [deleteMessage]
@@ -137,7 +147,8 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         pinned_by: profile.id,
       })
 
-      if (!error) toast.success('Message pinned')
+      if (error) toast.error('Failed to pin message')
+      else toast.success('Message pinned')
     },
     [profile, room, supabase]
   )
@@ -188,7 +199,9 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         message_id: messageId,
       })
 
-      if (!error) toast.success('Message bookmarked')
+      if (error && error.code === '23505') toast.info('Already bookmarked')
+      else if (error) toast.error('Failed to bookmark')
+      else toast.success('Message bookmarked')
     },
     [profile, supabase]
   )
@@ -258,6 +271,8 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
       {/* Messages */}
       <MessageList
         roomId={params.roomId}
+        messages={messages}
+        loading={messagesLoading}
         currentUserId={profile.id}
         isAdmin={isAdmin}
         isConfessionBox={room.is_confession_box}

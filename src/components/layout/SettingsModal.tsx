@@ -230,11 +230,14 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
                   checked={profile?.ghost_mode || false}
                   onCheckedChange={async (checked) => {
                     if (!profile) return
-                    await supabase
+                    const { error } = await supabase
                       .from('profiles')
                       .update({ ghost_mode: checked })
                       .eq('id', profile.id)
-                    setProfile({ ...profile, ghost_mode: checked })
+                    if (!error) {
+                      setProfile({ ...profile, ghost_mode: checked })
+                      toast.success(checked ? 'Ghost mode on — you are now invisible' : 'Ghost mode off')
+                    }
                   }}
                 />
               </div>

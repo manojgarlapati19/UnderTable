@@ -38,6 +38,44 @@ export default function AdminReportsPage() {
   }, [tab])
 
   async function loadReports() {
+    setLoading(true)
+
+    if (tab === 'auto-flagged') {
+      // For auto-flagged, query flagged messages directly and build report-like entries
+      const { data: flaggedMessages } = await supabase
+        .from('messages')
+        .select(`
+          id, content, user_id, room_id, is_flagged,
+          rooms!inner(name, icon_emoji),
+          profiles!inner(anonymous_name)
+        `)
+        .eq('is_flagged', true)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+
+      if (flaggedMessages) {
+        const synthetic: ReportWithMessage[] = flaggedMessages.map((m: any) => ({
+          id: `flagged-${m.id}`,
+          message_id: m.id,
+          reported_by: '',
+          reason: 'Auto-flagged',
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          messages: {
+            content: m.content,
+            is_flagged: m.is_flagged,
+            user_id: m.user_id,
+            room_id: m.room_id,
+            rooms: m.rooms,
+            profiles: m.profiles,
+          },
+        }))
+        setReports(synthetic)
+      }
+      setLoading(false)
+      return
+    }
+
     let query = supabase
       .from('reports')
       .select(`
@@ -52,7 +90,6 @@ export default function AdminReportsPage() {
 
     if (tab === 'pending') query = query.eq('status', 'pending')
     else if (tab === 'reviewed') query = query.in('status', ['reviewed', 'dismissed'])
-    else if (tab === 'auto-flagged') query = query.eq('messages.is_flagged', true)
 
     const { data } = await query
     if (data) setReports(data as ReportWithMessage[])

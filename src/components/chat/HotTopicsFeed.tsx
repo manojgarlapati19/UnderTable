@@ -122,7 +122,7 @@ export default function HotTopicsFeed() {
             <a
               key={topic.message_id}
               href={`/chat/${topic.room_id}#msg-${topic.message_id}`}
-              
+              className="group block glass-card rounded-[14px] p-3 hover:border-[rgba(255,255,255,0.2)] transition-all duration-150"
             >
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="secondary" className="text-[10px]">

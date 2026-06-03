@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface ReactionState {
@@ -11,7 +11,7 @@ interface ReactionState {
 
 export function useReactions(messageId: string, currentUserId: string) {
   const [reactions, setReactions] = useState<Record<string, ReactionState>>({})
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
 
   const toggleReaction = useCallback(
     async (emoji: string) => {

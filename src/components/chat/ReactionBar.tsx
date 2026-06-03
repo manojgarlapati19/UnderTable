@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/cn'
 import {
   Reply,
@@ -18,9 +16,11 @@ const REACTIONS = ['👍', '❤️', '😂', '🔥', '😮']
 interface ReactionBarProps {
   messageId: string
   userId: string
+  userReactedEmojis: Set<string>
   isOwn: boolean
   canEdit: boolean
   isAdmin: boolean
+  onReact: (emoji: string) => void
   onReply: () => void
   onEdit: () => void
   onDelete: () => void
@@ -33,9 +33,11 @@ interface ReactionBarProps {
 export default function ReactionBar({
   messageId,
   userId,
+  userReactedEmojis,
   isOwn,
   canEdit,
   isAdmin,
+  onReact,
   onReply,
   onEdit,
   onDelete,
@@ -44,44 +46,15 @@ export default function ReactionBar({
   onBlock,
   onBookmark,
 }: ReactionBarProps) {
-  const [optimisticReactions, setOptimisticReactions] = useState<Set<string>>(new Set())
-  const supabase = createClient()
-
-  async function handleReaction(emoji: string) {
-    const key = `${messageId}-${emoji}`
-    if (optimisticReactions.has(key)) {
-      setOptimisticReactions((prev) => {
-        const next = new Set(prev)
-        next.delete(key)
-        return next
-      })
-      await supabase
-        .from('reactions')
-        .delete()
-        .eq('message_id', messageId)
-        .eq('user_id', userId)
-        .eq('emoji', emoji)
-    } else {
-      setOptimisticReactions((prev) => {
-        const next = new Set(prev)
-        next.add(key)
-        return next
-      })
-      await supabase
-        .from('reactions')
-        .insert({ message_id: messageId, user_id: userId, emoji })
-    }
-  }
-
   return (
     <div className="flex items-center gap-0.5">
       {REACTIONS.map((emoji) => (
         <button
           key={emoji}
-          onClick={() => handleReaction(emoji)}
+          onClick={() => onReact(emoji)}
           className={cn(
             'flex h-7 w-7 items-center justify-center rounded-[8px] text-sm transition-all duration-150 hover:bg-[rgba(255,255,255,0.1)] hover:scale-110',
-            optimisticReactions.has(`${messageId}-${emoji}`) && 'bg-[rgba(255,255,255,0.1)] scale-110'
+            userReactedEmojis.has(emoji) && 'bg-[rgba(255,255,255,0.1)] scale-110'
           )}
           title={`React with ${emoji}`}
         >

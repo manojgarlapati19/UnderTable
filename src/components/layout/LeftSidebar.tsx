@@ -149,7 +149,7 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
                 <Link
                   key={room.id}
                   href={`/chat/${room.id}`}
-                  onClick={() => onToggle()}
+                  onClick={() => { if (isOpen) onToggle() }}
                   className={cn(
                     'flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm transition-all duration-150',
                     isActive

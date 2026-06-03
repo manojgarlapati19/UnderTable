@@ -34,6 +34,7 @@ export default function MessageInput({
   onOpenGif,
   replyTo,
   onDismissReply,
+  onTypingChange,
 }: MessageInputProps) {
   const [content, setContent] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -125,7 +126,7 @@ export default function MessageInput({
   }
 
   return (
-    <div className="border-t border-[rgba(255,255,255,0.08)]">
+    <div className="relative border-t border-[rgba(255,255,255,0.08)]">
       {/* Reply preview */}
       {replyTo && (
         <ReplyPreview

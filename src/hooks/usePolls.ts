@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Tables } from '@/lib/supabase/database.types'
 
@@ -13,14 +13,14 @@ export function usePolls(roomId: string, currentUserId: string) {
   const [polls, setPolls] = useState<Tables<'polls'>[]>([])
   const [pollVotes, setPollVotes] = useState<Record<string, PollVote[]>>({})
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
 
   useEffect(() => {
     loadPolls()
-    subscribeToPolls()
+    const channel = subscribeToPolls()
 
     return () => {
-      supabase.removeAllChannels()
+      supabase.removeChannel(channel)
     }
   }, [roomId])
 
@@ -72,6 +72,7 @@ export function usePolls(roomId: string, currentUserId: string) {
         }
       )
       .subscribe()
+    return channel
   }
 
   const vote = useCallback(

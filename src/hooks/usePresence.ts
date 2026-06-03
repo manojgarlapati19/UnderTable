@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimePresenceState } from '@supabase/supabase-js'
 
@@ -23,19 +23,25 @@ export function usePresence() {
     avatar_color: string
     ghost_mode: boolean
   } | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const channelRef = useRef<any>(null)
+  const typingChannelRef = useRef<any>(null)
+  const currentRoomRef = useRef<string | null>(null)
   const idleTimerRef = useRef<NodeJS.Timeout>()
+  const profileRef = useRef<typeof currentProfile>(null)
 
   useEffect(() => {
-    initPresence()
+    let cleanupActivity: (() => void) | undefined
+    initPresence().then((cleanup) => { cleanupActivity = cleanup })
     return () => {
+      cleanupActivity?.()
       channelRef.current?.unsubscribe()
+      if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current)
       clearTimeout(idleTimerRef.current)
     }
   }, [])
 
-  async function initPresence() {
+  async function initPresence(): Promise<(() => void) | undefined> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
@@ -47,12 +53,14 @@ export function usePresence() {
 
     if (!profile) return
 
-    setCurrentProfile({
+    const profileData = {
       user_id: user.id,
       anonymous_name: profile.anonymous_name,
       avatar_color: profile.avatar_color,
       ghost_mode: profile.ghost_mode,
-    })
+    }
+    setCurrentProfile(profileData)
+    profileRef.current = profileData
 
     const channel = supabase.channel('online-users', {
       config: { presence: { key: 'online-users' } },
@@ -99,35 +107,89 @@ export function usePresence() {
 
     channelRef.current = channel
 
-    // Idle detection
+    // Idle detection — always merge full profile so partial track doesn't wipe state
     const resetIdle = () => {
       clearTimeout(idleTimerRef.current)
       idleTimerRef.current = setTimeout(async () => {
-        await channel.track({ is_idle: true })
+        if (profileRef.current) {
+          await channel.track({
+            ...profileRef.current,
+            current_room: currentRoomRef.current,
+            last_seen: new Date().toISOString(),
+            is_idle: true,
+            typing: false,
+          })
+        }
       }, 2 * 60 * 1000)
     }
 
+    const handleActivity = () => {
+      if (profileRef.current) {
+        channel.track({
+          ...profileRef.current,
+          current_room: currentRoomRef.current,
+          last_seen: new Date().toISOString(),
+          is_idle: false,
+          typing: false,
+        })
+      }
+      resetIdle()
+    }
+
     const events = ['mousedown', 'keydown', 'mousemove', 'touchstart']
-    events.forEach((e) => window.addEventListener(e, resetIdle))
+    events.forEach((e) => window.addEventListener(e, handleActivity))
     resetIdle()
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, handleActivity))
+      clearTimeout(idleTimerRef.current)
+    }
   }
 
   const updateCurrentRoom = useCallback(
     async (roomId: string | null) => {
-      if (channelRef.current) {
-        await channelRef.current.track({ current_room: roomId })
+      currentRoomRef.current = roomId
+      if (channelRef.current && profileRef.current) {
+        await channelRef.current.track({
+          ...profileRef.current,
+          current_room: roomId,
+          last_seen: new Date().toISOString(),
+          is_idle: false,
+          typing: false,
+        })
+      }
+      // Clean up old typing channel
+      if (typingChannelRef.current) {
+        supabase.removeChannel(typingChannelRef.current)
+        typingChannelRef.current = null
+      }
+      // Create new typing channel for this room
+      if (roomId && profileRef.current) {
+        const typingChannel = supabase.channel(`typing:${roomId}`, {
+          config: { presence: { key: `typing-${roomId}` } },
+        })
+        typingChannel.subscribe()
+        typingChannelRef.current = typingChannel
       }
     },
-    []
+    [supabase]
   )
 
   const setTyping = useCallback(
     async (typing: boolean) => {
+      if (typingChannelRef.current && profileRef.current) {
+        await typingChannelRef.current.track({
+          user_id: profileRef.current.user_id,
+          anonymous_name: profileRef.current.anonymous_name,
+          typing,
+        })
+      }
+      // Also update global presence
       if (channelRef.current) {
         await channelRef.current.track({ typing })
       }
     },
-    []
+    [supabase]
   )
 
   const visibleUsers = onlineUsers.filter((u) => !u.ghost_mode)

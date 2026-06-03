@@ -10,6 +10,7 @@ import SettingsModal from '@/components/layout/SettingsModal'
 import { Loader2, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { useCallback } from 'react'
 
 export default function ChatLayout({
   children,
@@ -21,6 +22,29 @@ export default function ChatLayout({
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSettingsOpen(false)
+        setSidebarOpen(false)
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        router.push('/search')
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault()
+        router.push('/bookmarks')
+      }
+    },
+    [router]
+  )
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
 
   useEffect(() => {
     checkAuth()

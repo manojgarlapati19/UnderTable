@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Tables } from '@/lib/supabase/database.types'
 
@@ -27,7 +27,7 @@ export function useMessages({ roomId, limit = 100 }: UseMessagesOptions) {
   const [messages, setMessages] = useState<MessageWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
 
   const fetchMessages = useCallback(async () => {
     setLoading(true)
@@ -100,6 +100,44 @@ export function useMessages({ roomId, limit = 100 }: UseMessagesOptions) {
         { event: 'DELETE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
         (payload) => {
           setMessages((prev) => prev.filter((m) => m.id !== payload.old.id))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'reactions' },
+        async (payload) => {
+          const { data } = await supabase
+            .from('messages')
+            .select(`
+              *,
+              profiles!inner(anonymous_name, avatar_color),
+              reactions(id, emoji, user_id, profiles!inner(anonymous_name)),
+              reply_to_message:messages!messages_reply_to_fkey(content, profiles!inner(anonymous_name))
+            `)
+            .eq('id', payload.new.message_id)
+            .single()
+          if (data) {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === data.id ? (data as MessageWithRelations) : m))
+            )
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'reactions' },
+        (payload) => {
+          setMessages((prev) =>
+            prev.map((m) => {
+              if (m.id === payload.old.message_id) {
+                return {
+                  ...m,
+                  reactions: m.reactions?.filter((r) => r.id !== payload.old.id) || [],
+                }
+              }
+              return m
+            })
+          )
         }
       )
       .subscribe()

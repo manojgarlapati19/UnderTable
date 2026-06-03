@@ -59,7 +59,7 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
           <MessageSquare className="h-5 w-5" />
         </Link>
         <Link
-          href="/chat"
+          href="/chat?view=hot"
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
             pathname === '/chat'
@@ -71,7 +71,7 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
           <Flame className="h-5 w-5" />
         </Link>
         <Link
-          href="/chat"
+          href="/chat?view=leaderboard"
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
             pathname === '/chat'
