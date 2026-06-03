@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
 } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/cn'
 
@@ -67,19 +68,9 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
         >
           <Search className="h-5 w-5" />
         </Link>
-        <Link
-          href="/search"
-          className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
-            isActive('/search')
-              ? 'bg-[rgba(255,255,255,0.18)] text-white'
-              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
-          )}
-          title="Search"
-        >
-          <Search className="h-5 w-5" />
-        </Link>
       </nav>
+
+      <Separator className="mx-3 my-1" />
 
       {/* Bottom: Settings + Logout */}
       <div className="flex flex-col items-center gap-1 pb-4 px-3">

@@ -89,6 +89,11 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
       .select('*')
       .order('name')
 
+    if (error) {
+      console.error('Failed to load rooms:', error)
+      return
+    }
+
     if (data) {
       setRooms(data)
     }
@@ -231,7 +236,7 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
       {/* Sidebar - 220px room sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-[60px] z-50 flex w-[218px] flex-col glass-panel border-r border-[rgba(255,255,255,0.08)] shrink-0 transition-transform duration-300 lg:relative lg:left-0',
+          'fixed inset-y-0 left-[60px] z-50 flex w-[220px] flex-col glass-panel border-r border-[rgba(255,255,255,0.08)] shrink-0 transition-transform duration-300 lg:relative lg:left-0',
           isOpen ? 'translate-x-0' : '-translate-x-full',
           'lg:!translate-x-0'
         )}

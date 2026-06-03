@@ -13,6 +13,7 @@ import MessageInput from '@/components/chat/MessageInput'
 import PinnedMessagesBar from '@/components/chat/PinnedMessagesBar'
 import PollCreateModal from '@/components/chat/PollCreateModal'
 import GifPickerModal from '@/components/chat/GifPickerModal'
+import RoomSettingsModal from '@/components/chat/RoomSettingsModal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,6 +36,9 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   const [showPollModal, setShowPollModal] = useState(false)
   const [showGifModal, setShowGifModal] = useState(false)
   const [blockedUserIds, setBlockedUserIds] = useState<string[]>([])
+
+  // Room settings state
+  const [roomSettingsOpen, setRoomSettingsOpen] = useState(false)
 
   // Search state
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -312,7 +316,12 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
           </Button>
 
           {isAdmin && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[11px]">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-[11px]"
+              onClick={() => setRoomSettingsOpen(true)}
+            >
               <Settings className="h-4 w-4" />
             </Button>
           )}
@@ -407,6 +416,15 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         onSelect={async (gifUrl) => {
           await handleSend(gifUrl, null)
         }}
+      />
+
+      {/* Room Settings Modal */}
+      <RoomSettingsModal
+        open={roomSettingsOpen}
+        onOpenChange={setRoomSettingsOpen}
+        room={room}
+        isAdmin={isAdmin}
+        onRoomUpdated={loadRoom}
       />
     </>
   )

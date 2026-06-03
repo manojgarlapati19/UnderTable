@@ -92,11 +92,15 @@ export default function ChatLayout({
         <IconRail onOpenSettings={() => setSettingsOpen(true)} />
 
         {/* Left Sidebar - Room sidebar */}
-        <LeftSidebar
-          isOpen={sidebarOpen}
-          onToggle={() => setSidebarOpen(false)}
-          onOpenSettings={() => setSettingsOpen(true)}
-        />
+        {/* On desktop, wraps in a fixed-width container so flex layout allocates space.
+            LeftSidebar internally uses lg:relative to participate in the flex flow. */}
+        <div className="flex lg:w-[220px] lg:shrink-0">
+          <LeftSidebar
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen(false)}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
+        </div>
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col min-w-0 glass-chat">
