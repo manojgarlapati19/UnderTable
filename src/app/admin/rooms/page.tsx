@@ -46,10 +46,17 @@ export default function AdminRoomsPage() {
   }, [])
 
   async function loadRooms() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('rooms')
       .select('*')
       .order('name')
+
+    if (error) {
+      console.error('Failed to load rooms:', error)
+      toast.error('Failed to refresh rooms list')
+      setLoading(false)
+      return
+    }
 
     if (data) setRooms(data)
     setLoading(false)
@@ -75,7 +82,7 @@ export default function AdminRoomsPage() {
       toast.success('Room created!')
       setShowCreate(false)
       resetForm()
-      loadRooms()
+      await loadRooms()
     }
   }
 
@@ -100,7 +107,7 @@ export default function AdminRoomsPage() {
       toast.success('Room updated!')
       setEditingRoom(null)
       resetForm()
-      loadRooms()
+      await loadRooms()
     }
   }
 
@@ -110,7 +117,7 @@ export default function AdminRoomsPage() {
     const { error } = await supabase.from('rooms').delete().eq('id', roomId)
     if (!error) {
       toast.success('Room deleted')
-      loadRooms()
+      await loadRooms()
     }
   }
 
