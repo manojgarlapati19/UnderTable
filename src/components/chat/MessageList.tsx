@@ -59,10 +59,85 @@ export default function MessageList({
 
   useEffect(() => {
     loadPolls()
-    const cleanup = subscribeToTyping()
+
+    let typingChannel: ReturnType<typeof supabase.channel> | null = null
+    let pollsChannel: ReturnType<typeof supabase.channel> | null = null
+
+    const setupChannels = async () => {
+      try {
+        typingChannel = supabase.channel(`typing:${roomId}`, {
+          config: { presence: { key: `typing-${roomId}` } },
+        })
+
+        typingChannel
+          .on('presence', { event: 'sync' }, () => {
+            try {
+              const state = typingChannel?.presenceState() || {}
+              const typing: string[] = []
+              for (const key in state) {
+                const presences = state[key] as any[]
+                presences?.forEach((p) => {
+                  if (p.typing && p.user_id !== currentUserId && p.anonymous_name) {
+                    typing.push(p.anonymous_name)
+                  }
+                })
+              }
+              setTypingUsers(typing)
+            } catch (err) {
+              console.error('Typing presence sync error:', err)
+            }
+          })
+          .subscribe((status, err) => {
+            if (err) {
+              console.error('Typing channel subscribe error:', err)
+            }
+          })
+      } catch (err) {
+        console.error('Failed to setup typing channel:', err)
+      }
+
+      try {
+        pollsChannel = supabase
+          .channel(`polls:${roomId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'polls',
+              filter: `room_id=eq.${roomId}`,
+            },
+            () => {
+              loadPolls()
+            }
+          )
+          .subscribe((status, err) => {
+            if (err) {
+              console.error('Polls channel subscribe error:', err)
+            }
+          })
+      } catch (err) {
+        console.error('Failed to setup polls channel:', err)
+      }
+    }
+
+    setupChannels()
 
     return () => {
-      cleanup()
+      if (typingChannel) {
+        try {
+          supabase.removeChannel(typingChannel)
+        } catch (err) {
+          console.error('Failed to remove typing channel:', err)
+        }
+      }
+      if (pollsChannel) {
+        try {
+          supabase.removeChannel(pollsChannel)
+        } catch (err) {
+          console.error('Failed to remove polls channel:', err)
+        }
+      }
     }
   }, [roomId])
 
@@ -91,37 +166,17 @@ export default function MessageList({
   }, [])
 
   async function loadPolls() {
-    const { data } = await supabase
-      .from('polls')
-      .select('*')
-      .eq('room_id', roomId)
-      .order('created_at', { ascending: false })
+    try {
+      const { data } = await supabase
+        .from('polls')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false })
 
-    if (data) setPolls(data)
-  }
-
-  function subscribeToTyping() {
-    const channel = supabase.channel(`typing:${roomId}`, {
-      config: { presence: { key: `typing-${roomId}` } },
-    })
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        const typing: string[] = []
-        for (const key in state) {
-          const presences = state[key] as any[]
-          presences?.forEach((p) => {
-            if (p.typing && p.user_id !== currentUserId && p.anonymous_name) {
-              typing.push(p.anonymous_name)
-            }
-          })
-        }
-        setTypingUsers(typing)
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
+      if (data) setPolls(data)
+    } catch (err) {
+      console.error('Failed to load polls:', err)
+    }
   }
 
   function scrollToBottom() {
@@ -167,7 +222,7 @@ export default function MessageList({
         {isSearchOpen && searchQuery && (
           <div className="px-4 py-2 border-b border-[rgba(255,255,255,0.08)]">
             <p className="text-xs text-[rgba(255,255,255,0.45)]">
-              Found {searchResultCount} result{searchResultCount !== 1 ? 's' : ''} for "{searchQuery}"
+              Found {searchResultCount} result{searchResultCount !== 1 ? 's' : ''} for &quot;{searchQuery}&quot;
             </p>
           </div>
         )}

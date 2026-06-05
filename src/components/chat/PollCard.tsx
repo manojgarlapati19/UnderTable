@@ -37,60 +37,90 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
 
   useEffect(() => {
     loadVotes()
-    const cleanup = subscribeToVotes()
-    return cleanup
+
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const setupChannel = async () => {
+      try {
+        channel = supabase
+          .channel(`poll-votes-${poll.id}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'poll_votes', filter: `poll_id=eq.${poll.id}` },
+            () => loadVotes()
+          )
+          .subscribe((status, err) => {
+            if (err) {
+              console.error('Poll votes subscription error:', err)
+            }
+          })
+      } catch (err) {
+        console.error('Failed to setup poll votes channel:', err)
+      }
+    }
+
+    setupChannel()
+
+    return () => {
+      if (channel) {
+        try {
+          supabase.removeChannel(channel)
+        } catch (err) {
+          console.error('Failed to remove poll votes channel:', err)
+        }
+      }
+    }
   }, [poll.id])
 
   async function loadVotes() {
-    const { data } = await supabase
-      .from('poll_votes')
-      .select('option_id, user_id')
-      .eq('poll_id', poll.id)
+    try {
+      const { data } = await supabase
+        .from('poll_votes')
+        .select('option_id, user_id')
+        .eq('poll_id', poll.id)
 
-    if (data) {
-      const voteCounts: Record<string, number> = {}
-      data.forEach((v) => {
-        voteCounts[v.option_id] = (voteCounts[v.option_id] || 0) + 1
-        if (v.user_id === currentUserId) setUserVote(v.option_id)
-      })
+      if (data) {
+        const voteCounts: Record<string, number> = {}
+        data.forEach((v) => {
+          voteCounts[v.option_id] = (voteCounts[v.option_id] || 0) + 1
+          if (v.user_id === currentUserId) setUserVote(v.option_id)
+        })
 
-      setOptions((prev) =>
-        prev.map((opt) => ({
-          ...opt,
-          votes: voteCounts[opt.id] || 0,
-        }))
-      )
-      setTotalVotes(data.length)
+        setOptions((prev) =>
+          prev.map((opt) => ({
+            ...opt,
+            votes: voteCounts[opt.id] || 0,
+          }))
+        )
+        setTotalVotes(data.length)
+      }
+    } catch (err) {
+      console.error('Failed to load poll votes:', err)
     }
-  }
-
-  function subscribeToVotes() {
-    const channel = supabase
-      .channel(`poll-votes-${poll.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'poll_votes', filter: `poll_id=eq.${poll.id}` },
-        () => loadVotes()
-      )
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
   }
 
   async function handleVote(optionId: string) {
     if (userVote || isClosed) return
 
-    const { error } = await supabase
-      .from('poll_votes')
-      .insert({ poll_id: poll.id, user_id: currentUserId, option_id: optionId })
+    try {
+      const { error } = await supabase
+        .from('poll_votes')
+        .insert({ poll_id: poll.id, user_id: currentUserId, option_id: optionId })
 
-    if (!error) {
-      setUserVote(optionId)
+      if (!error) {
+        setUserVote(optionId)
+      }
+    } catch (err) {
+      console.error('Failed to vote:', err)
     }
   }
 
   async function handleClosePoll() {
-    await supabase.from('polls').update({ is_closed: true }).eq('id', poll.id)
+    try {
+      await supabase.from('polls').update({ is_closed: true }).eq('id', poll.id)
+    } catch (err) {
+      console.error('Failed to close poll:', err)
+    }
   }
 
   const chartData = options.map((opt) => ({

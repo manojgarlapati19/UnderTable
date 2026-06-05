@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useMessages } from '@/hooks/useMessages'
 import { usePresence } from '@/hooks/usePresence'
 import { useNotifications } from '@/hooks/useNotifications'
-import { getAvatarColor } from '@/lib/utils/avatar-color'
 import { cn } from '@/lib/utils/cn'
 import MessageList from '@/components/chat/MessageList'
 import MessageInput from '@/components/chat/MessageInput'
@@ -28,7 +27,8 @@ interface RoomPageProps {
 export default function ChatRoomPage({ params }: RoomPageProps) {
   const router = useRouter()
   const supabase = createClient()
-  const { notifyNewMessage } = useNotifications()
+  const notifications = useNotifications() || {}
+  const notifyNewMessage = (notifications as any).notifyNewMessage || (() => {})
 
   const [room, setRoom] = useState<Tables<'rooms'> | null>(null)
   const [profile, setProfile] = useState<Tables<'profiles'> | null>(null)
@@ -56,19 +56,31 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     roomId: params.roomId,
   })
 
-  const { updateCurrentRoom, setTyping, visibleUsers } = usePresence()
+  const presence = usePresence()
+  const updateCurrentRoom = presence?.updateCurrentRoom || (() => {})
+  const setTyping = presence?.setTyping || (() => {})
+  const visibleUsers = presence?.visibleUsers || []
 
-  const onlineCount = visibleUsers.filter((u) => u.current_room === params.roomId).length
+  const onlineCount = visibleUsers.filter((u: any) => u.current_room === params.roomId).length
 
   useEffect(() => {
     checkRoomAccess()
     loadRoom()
     loadProfile()
     loadBlocks()
-    updateCurrentRoom(params.roomId)
+
+    try {
+      updateCurrentRoom(params.roomId)
+    } catch (err) {
+      console.error('Failed to update current room on mount:', err)
+    }
 
     return () => {
-      updateCurrentRoom(null)
+      try {
+        updateCurrentRoom(null)
+      } catch (err) {
+        console.error('Failed to update current room on unmount:', err)
+      }
     }
   }, [params.roomId])
 
@@ -92,64 +104,86 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   }, [isSearchOpen])
 
   async function checkRoomAccess() {
-    const { data: roomData } = await supabase
-      .from('rooms')
-      .select('room_password')
-      .eq('id', params.roomId)
-      .single()
+    try {
+      const { data: roomData } = await supabase
+        .from('rooms')
+        .select('room_password')
+        .eq('id', params.roomId)
+        .single()
 
-    if (roomData && (roomData as any).room_password) {
-      const hasAccess = sessionStorage.getItem(`room_access_${params.roomId}`)
-      if (!hasAccess) {
-        toast.error('This room is password protected')
-        router.push('/chat')
-        return
+      if (roomData && (roomData as any).room_password) {
+        const hasAccess = sessionStorage.getItem(`room_access_${params.roomId}`)
+        if (!hasAccess) {
+          toast.error('This room is password protected')
+          router.push('/chat')
+          return
+        }
       }
+      setIsCheckingAccess(false)
+    } catch (err) {
+      console.error('Failed to check room access:', err)
+      setIsCheckingAccess(false)
     }
-    setIsCheckingAccess(false)
   }
 
   async function loadRoom() {
-    const { data } = await supabase
-      .from('rooms')
-      .select('*')
-      .eq('id', params.roomId)
-      .single()
+    try {
+      const { data } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', params.roomId)
+        .single()
 
-    if (data) setRoom(data)
+      if (data) setRoom(data)
+    } catch (err) {
+      console.error('Failed to load room:', err)
+    }
   }
 
   async function loadProfile() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
 
-    if (data) setProfile(data)
+      if (data) setProfile(data)
+    } catch (err) {
+      console.error('Failed to load profile:', err)
+    }
   }
 
   async function loadBlocks() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-    const { data } = await supabase
-      .from('blocks')
-      .select('blocked_id')
-      .eq('blocker_id', user.id)
+      const { data } = await supabase
+        .from('blocks')
+        .select('blocked_id')
+        .eq('blocker_id', user.id)
 
-    if (data) setBlockedUserIds(data.map((b) => b.blocked_id))
+      if (data) setBlockedUserIds(data.map((b) => b.blocked_id))
+    } catch (err) {
+      console.error('Failed to load blocks:', err)
+    }
   }
 
   const handleSend = useCallback(
     async (content: string, replyToId?: string | null) => {
-      const expiresAt = room?.is_confession_box
-        ? new Date(Date.now() + 60 * 60 * 1000).toISOString()
-        : undefined
-      await sendMessage(content, replyToId, expiresAt)
+      try {
+        const expiresAt = room?.is_confession_box
+          ? new Date(Date.now() + 60 * 60 * 1000).toISOString()
+          : undefined
+        await sendMessage(content, replyToId, expiresAt)
+      } catch (err) {
+        console.error('Failed to send message:', err)
+        toast.error('Failed to send message')
+      }
     },
     [sendMessage, room]
   )
@@ -196,14 +230,19 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     async (messageId: string) => {
       if (!profile || !room) return
 
-      const { error } = await supabase.from('pinned_messages').insert({
-        room_id: room.id,
-        message_id: messageId,
-        pinned_by: profile.id,
-      })
+      try {
+        const { error } = await supabase.from('pinned_messages').insert({
+          room_id: room.id,
+          message_id: messageId,
+          pinned_by: profile.id,
+        })
 
-      if (error) toast.error('Failed to pin message')
-      else toast.success('Message pinned')
+        if (error) toast.error('Failed to pin message')
+        else toast.success('Message pinned')
+      } catch (err) {
+        console.error('Failed to pin message:', err)
+        toast.error('Failed to pin message')
+      }
     },
     [profile, room, supabase]
   )
@@ -217,13 +256,16 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         '1': 'Harassment', '2': 'Spam', '3': 'Inappropriate', '4': 'Other',
       }
 
-      await supabase.from('reports').insert({
-        message_id: messageId,
-        reported_by: profile.id,
-        reason: reasonMap[reason] || reason,
-      })
-
-      toast.success('Message reported')
+      try {
+        await supabase.from('reports').insert({
+          message_id: messageId,
+          reported_by: profile.id,
+          reason: reasonMap[reason] || reason,
+        })
+        toast.success('Message reported')
+      } catch (err) {
+        console.error('Failed to report message:', err)
+      }
     },
     [profile, supabase]
   )
@@ -232,14 +274,18 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     async (userId: string) => {
       if (!profile) return
 
-      const { error } = await supabase.from('blocks').insert({
-        blocker_id: profile.id,
-        blocked_id: userId,
-      })
+      try {
+        const { error } = await supabase.from('blocks').insert({
+          blocker_id: profile.id,
+          blocked_id: userId,
+        })
 
-      if (!error) {
-        setBlockedUserIds([...blockedUserIds, userId])
-        toast.success('User blocked. Their messages are now hidden.')
+        if (!error) {
+          setBlockedUserIds([...blockedUserIds, userId])
+          toast.success('User blocked. Their messages are now hidden.')
+        }
+      } catch (err) {
+        console.error('Failed to block user:', err)
       }
     },
     [profile, blockedUserIds, supabase]
@@ -247,10 +293,14 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
   const handleJumpToMessage = useCallback(
     (messageId: string) => {
-      const el = document.getElementById(`msg-${messageId}`)
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        el.classList.add('message-highlight')
+      try {
+        const el = document.getElementById(`msg-${messageId}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          el.classList.add('message-highlight')
+        }
+      } catch (err) {
+        console.error('Failed to jump to message:', err)
       }
     },
     []

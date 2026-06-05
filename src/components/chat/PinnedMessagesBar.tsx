@@ -19,22 +19,66 @@ export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessage
 
   useEffect(() => {
     loadPinnedMessages()
+
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const setupChannel = async () => {
+      try {
+        channel = supabase
+          .channel(`pinned-messages-${roomId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'pinned_messages',
+              filter: `room_id=eq.${roomId}`,
+            },
+            () => {
+              loadPinnedMessages()
+            }
+          )
+          .subscribe((status, err) => {
+            if (err) {
+              console.error('Pinned messages subscription error:', err)
+            }
+          })
+      } catch (err) {
+        console.error('Failed to setup pinned messages channel:', err)
+      }
+    }
+
+    setupChannel()
+
+    return () => {
+      if (channel) {
+        try {
+          supabase.removeChannel(channel)
+        } catch (err) {
+          console.error('Failed to remove pinned messages channel:', err)
+        }
+      }
+    }
   }, [roomId])
 
   async function loadPinnedMessages() {
-    const { data } = await supabase
-      .from('pinned_messages')
-      .select(`
-        id,
-        message_id,
-        created_at,
-        messages!inner(content, profiles!inner(anonymous_name))
-      `)
-      .eq('room_id', roomId)
-      .order('created_at', { ascending: false })
-      .limit(3)
+    try {
+      const { data } = await supabase
+        .from('pinned_messages')
+        .select(`
+          id,
+          message_id,
+          created_at,
+          messages!inner(content, profiles!inner(anonymous_name))
+        `)
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false })
+        .limit(3)
 
-    if (data) setPinnedMessages(data)
+      if (data) setPinnedMessages(data)
+    } catch (err) {
+      console.error('Failed to load pinned messages:', err)
+    }
   }
 
   if (pinnedMessages.length === 0) return null

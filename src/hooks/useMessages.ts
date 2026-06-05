@@ -103,15 +103,48 @@ export function useMessages({ roomId, limit = 100 }: { roomId: string; limit?: n
   }, [roomId, limit, supabase])
 
   useEffect(() => {
-  fetchMessages()
+    fetchMessages()
 
-  // TEMP: comment out realtime to test
-  // const channel = supabase.channel(...)
-  // ...
-  // .subscribe()
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
-  // return () => { supabase.removeChannel(channel) }
-}, [roomId, fetchMessages, supabase])
+    const setupChannel = async () => {
+      try {
+        channel = supabase
+          .channel(`messages:${roomId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'messages',
+              filter: `room_id=eq.${roomId}`,
+            },
+            () => {
+              fetchMessages()
+            }
+          )
+          .subscribe((status, err) => {
+            if (err) {
+              console.error('Realtime subscription error:', err)
+            }
+          })
+      } catch (err) {
+        console.error('Failed to setup realtime channel:', err)
+      }
+    }
+
+    setupChannel()
+
+    return () => {
+      if (channel) {
+        try {
+          supabase.removeChannel(channel)
+        } catch (err) {
+          console.error('Failed to remove channel:', err)
+        }
+      }
+    }
+  }, [roomId, fetchMessages, supabase])
 
   const sendMessage = useCallback(async (
     content: string,

@@ -1,175 +1,152 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { RealtimePresenceState } from '@supabase/supabase-js'
 
 interface PresenceUser {
   user_id: string
   anonymous_name: string
   avatar_color: string
   current_room: string | null
-  ghost_mode: boolean
-  last_seen: string
-  is_idle: boolean
-  typing: boolean
+  ghost_mode?: boolean
 }
 
 export function usePresence() {
-  const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([])
-  const [currentProfile, setCurrentProfile] = useState<{
-    user_id: string
-    anonymous_name: string
-    avatar_color: string
-    ghost_mode: boolean
-  } | null>(null)
-  const supabase = useMemo(() => createClient(), [])
+  const [visibleUsers, setVisibleUsers] = useState<PresenceUser[]>([])
+  const [typingUsers, setTypingUsers] = useState<string[]>([])
+  const supabase = useRef(createClient()).current
   const channelRef = useRef<any>(null)
+  const profileRef = useRef<any>(null)
   const typingChannelRef = useRef<any>(null)
   const currentRoomRef = useRef<string | null>(null)
-  const idleTimerRef = useRef<NodeJS.Timeout>()
-  const profileRef = useRef<typeof currentProfile>(null)
 
   useEffect(() => {
-    let cleanupActivity: (() => void) | undefined
-    initPresence().then((cleanup) => { cleanupActivity = cleanup })
-    return () => {
-      cleanupActivity?.()
-      channelRef.current?.unsubscribe()
-      if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current)
-      clearTimeout(idleTimerRef.current)
-    }
-  }, [])
+    let mounted = true
 
-  async function initPresence(): Promise<(() => void) | undefined> {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    async function init() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user || !mounted) return
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, anonymous_name, avatar_color, ghost_mode')
-      .eq('id', user.id)
-      .single()
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, anonymous_name, avatar_color, ghost_mode')
+          .eq('id', user.id)
+          .single()
 
-    if (!profile) return
+        if (!profile || !mounted) return
+        profileRef.current = profile
 
-    const profileData = {
-      user_id: user.id,
-      anonymous_name: profile.anonymous_name,
-      avatar_color: profile.avatar_color,
-      ghost_mode: profile.ghost_mode,
-    }
-    setCurrentProfile(profileData)
-    profileRef.current = profileData
+        try {
+          channelRef.current = supabase.channel('online-users', {
+            config: { presence: { key: user.id } }
+          })
 
-    const channel = supabase.channel('online-users', {
-      config: { presence: { key: 'online-users' } },
-    })
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        const users: PresenceUser[] = []
-
-        for (const key in state) {
-          const presences = state[key] as any[]
-          if (presences?.length > 0) {
-            const p = presences[0]
-            users.push({
-              user_id: p.user_id,
-              anonymous_name: p.anonymous_name,
-              avatar_color: p.avatar_color,
-              current_room: p.current_room || null,
-              ghost_mode: p.ghost_mode || false,
-              last_seen: p.last_seen || new Date().toISOString(),
-              is_idle: p.is_idle || false,
-              typing: p.typing || false,
+          channelRef.current
+            .on('presence', { event: 'sync' }, () => {
+              try {
+                if (!mounted) return
+                const state = channelRef.current?.presenceState() || {}
+                const users: PresenceUser[] = []
+                for (const key in state) {
+                  const presences = state[key] as any[]
+                  if (presences?.[0]) {
+                    users.push(presences[0] as PresenceUser)
+                  }
+                }
+                setVisibleUsers(
+                  users.filter((u) => !u.ghost_mode || u.user_id === user.id)
+                )
+              } catch (err) {
+                console.error('Presence sync error:', err)
+              }
             })
-          }
+            .subscribe(async (status: string, err?: Error) => {
+              if (err) {
+                console.error('Presence subscribe error:', err)
+                return
+              }
+              if (status === 'SUBSCRIBED' && !profile.ghost_mode) {
+                try {
+                  await channelRef.current?.track({
+                    user_id: user.id,
+                    anonymous_name: profile.anonymous_name,
+                    avatar_color: profile.avatar_color,
+                    current_room: null,
+                    ghost_mode: profile.ghost_mode || false,
+                  })
+                } catch (trackErr) {
+                  console.error('Presence track error:', trackErr)
+                }
+              }
+            })
+        } catch (channelErr) {
+          console.error('Failed to create presence channel:', channelErr)
         }
-
-        setOnlineUsers(users)
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            user_id: user.id,
-            anonymous_name: profile.anonymous_name,
-            avatar_color: profile.avatar_color,
-            current_room: null,
-            ghost_mode: profile.ghost_mode,
-            last_seen: new Date().toISOString(),
-            is_idle: false,
-            typing: false,
-          })
-        }
-      })
-
-    channelRef.current = channel
-
-    // Idle detection — always merge full profile so partial track doesn't wipe state
-    const resetIdle = () => {
-      clearTimeout(idleTimerRef.current)
-      idleTimerRef.current = setTimeout(async () => {
-        if (profileRef.current) {
-          await channel.track({
-            ...profileRef.current,
-            current_room: currentRoomRef.current,
-            last_seen: new Date().toISOString(),
-            is_idle: true,
-            typing: false,
-          })
-        }
-      }, 2 * 60 * 1000)
-    }
-
-    const handleActivity = () => {
-      if (profileRef.current) {
-        channel.track({
-          ...profileRef.current,
-          current_room: currentRoomRef.current,
-          last_seen: new Date().toISOString(),
-          is_idle: false,
-          typing: false,
-        })
+      } catch (err) {
+        console.error('Presence init error:', err)
       }
-      resetIdle()
     }
 
-    const events = ['mousedown', 'keydown', 'mousemove', 'touchstart']
-    events.forEach((e) => window.addEventListener(e, handleActivity))
-    resetIdle()
+    init()
 
     return () => {
-      events.forEach((e) => window.removeEventListener(e, handleActivity))
-      clearTimeout(idleTimerRef.current)
+      mounted = false
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current)
+        } catch (err) {
+          console.error('Failed to remove presence channel:', err)
+        }
+        channelRef.current = null
+      }
+      if (typingChannelRef.current) {
+        try {
+          supabase.removeChannel(typingChannelRef.current)
+        } catch (err) {
+          console.error('Failed to remove typing channel:', err)
+        }
+        typingChannelRef.current = null
+      }
     }
-  }
+  }, [supabase])
 
   const updateCurrentRoom = useCallback(
     async (roomId: string | null) => {
       currentRoomRef.current = roomId
-      if (channelRef.current && profileRef.current) {
-        await channelRef.current.track({
-          ...profileRef.current,
-          current_room: roomId,
-          last_seen: new Date().toISOString(),
-          is_idle: false,
-          typing: false,
-        })
-      }
-      // Clean up old typing channel
-      if (typingChannelRef.current) {
-        supabase.removeChannel(typingChannelRef.current)
-        typingChannelRef.current = null
-      }
-      // Create new typing channel for this room
-      if (roomId && profileRef.current) {
-        const typingChannel = supabase.channel(`typing:${roomId}`, {
-          config: { presence: { key: `typing-${roomId}` } },
-        })
-        typingChannel.subscribe()
-        typingChannelRef.current = typingChannel
+      try {
+        if (channelRef.current && profileRef.current) {
+          await channelRef.current.track({
+            user_id: profileRef.current.id,
+            anonymous_name: profileRef.current.anonymous_name,
+            avatar_color: profileRef.current.avatar_color,
+            current_room: roomId,
+            ghost_mode: profileRef.current.ghost_mode || false,
+          })
+        }
+        // Clean up old typing channel
+        if (typingChannelRef.current) {
+          try {
+            supabase.removeChannel(typingChannelRef.current)
+          } catch (err) {
+            console.error('Failed to remove old typing channel:', err)
+          }
+          typingChannelRef.current = null
+        }
+        // Create new typing channel for this room
+        if (roomId && profileRef.current) {
+          const typingChannel = supabase.channel(`typing:${roomId}`, {
+            config: { presence: { key: `typing-${roomId}` } },
+          })
+          typingChannel.subscribe((status: string, err?: Error) => {
+            if (err) {
+              console.error('Typing channel subscribe error:', err)
+            }
+          })
+          typingChannelRef.current = typingChannel
+        }
+      } catch (err) {
+        console.error('Failed to update current room:', err)
       }
     },
     [supabase]
@@ -177,30 +154,23 @@ export function usePresence() {
 
   const setTyping = useCallback(
     async (typing: boolean) => {
-      if (typingChannelRef.current && profileRef.current) {
-        await typingChannelRef.current.track({
-          user_id: profileRef.current.user_id,
-          anonymous_name: profileRef.current.anonymous_name,
-          typing,
-        })
-      }
-      // Also update global presence
-      if (channelRef.current) {
-        await channelRef.current.track({ typing })
+      try {
+        if (typingChannelRef.current && profileRef.current) {
+          await typingChannelRef.current.track({
+            user_id: profileRef.current.id,
+            anonymous_name: profileRef.current.anonymous_name,
+            typing,
+          })
+        }
+        if (channelRef.current) {
+          await channelRef.current.track({ typing })
+        }
+      } catch (err) {
+        console.error('Failed to set typing:', err)
       }
     },
-    [supabase]
+    []
   )
 
-  const visibleUsers = onlineUsers.filter((u) => !u.ghost_mode)
-  const ghostUsers = onlineUsers.filter((u) => u.ghost_mode)
-
-  return {
-    onlineUsers,
-    visibleUsers,
-    ghostUsers,
-    currentProfile,
-    updateCurrentRoom,
-    setTyping,
-  }
+  return { visibleUsers, typingUsers, updateCurrentRoom, setTyping }
 }

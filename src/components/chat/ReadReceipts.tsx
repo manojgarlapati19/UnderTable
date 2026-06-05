@@ -30,44 +30,68 @@ export default function ReadReceipts({ messageId, maxVisible = 5 }: ReadReceipts
   useEffect(() => {
     loadReaders()
 
-    const channel = supabase
-      .channel(`read-receipts-${messageId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'read_receipts',
-          filter: `message_id=eq.${messageId}`,
-        },
-        () => {
-          loadReaders()
-        }
-      )
-      .subscribe()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const setupChannel = async () => {
+      try {
+        channel = supabase
+          .channel(`read-receipts-${messageId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'read_receipts',
+              filter: `message_id=eq.${messageId}`,
+            },
+            () => {
+              loadReaders()
+            }
+          )
+          .subscribe((status, err) => {
+            if (err) {
+              console.error('Read receipts subscription error:', err)
+            }
+          })
+      } catch (err) {
+        console.error('Failed to setup read receipts channel:', err)
+      }
+    }
+
+    setupChannel()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) {
+        try {
+          supabase.removeChannel(channel)
+        } catch (err) {
+          console.error('Failed to remove read receipts channel:', err)
+        }
+      }
     }
   }, [messageId])
 
   async function loadReaders() {
-    const { data } = await supabase
-      .from('read_receipts')
-      .select(`
-        user_id,
-        profiles!inner(anonymous_name, avatar_color)
-      `)
-      .eq('message_id', messageId)
-      .limit(maxVisible + 1)
+    try {
+      const { data } = await supabase
+        .from('read_receipts')
+        .select(`
+          user_id,
+          profiles!inner(anonymous_name, avatar_color)
+        `)
+        .eq('message_id', messageId)
+        .limit(maxVisible + 1)
 
-    if (data) {
-      const users = data.map((r: any) => ({
-        user_id: r.user_id,
-        anonymous_name: r.profiles.anonymous_name,
-        avatar_color: r.profiles.avatar_color,
-      }))
-      setReaders(users)
+      if (data) {
+        const users = data.map((r: any) => ({
+          user_id: r.user_id,
+          anonymous_name: r.profiles.anonymous_name,
+          avatar_color: r.profiles.avatar_color,
+        }))
+        setReaders(users)
+      }
+    } catch (err) {
+      console.error('Failed to load read receipts:', err)
     }
   }
 

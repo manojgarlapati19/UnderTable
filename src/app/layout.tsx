@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import IconRail from '@/components/layout/IconRail'
 import LeftSidebar from '@/components/layout/LeftSidebar'
 import RightSidebar from '@/components/layout/RightSidebar'
@@ -54,40 +55,42 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <TooltipProvider>
-      {/* Root: full screen, flex row, no overflow */}
-      <div className="flex h-screen w-screen overflow-hidden">
+      <ErrorBoundary>
+        {/* Root: full screen, flex row, no overflow */}
+        <div className="flex h-screen w-screen overflow-hidden">
 
-        {/* Mobile hamburger */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="fixed top-3 left-3 z-50 lg:hidden"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <Menu className="h-5 w-5 text-white" />
-        </Button>
+          {/* Mobile hamburger */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="fixed top-3 left-3 z-50 lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5 text-white" />
+          </Button>
 
-        {/* 1. Icon Rail — 60px, always visible */}
-        <IconRail onOpenSettings={() => setSettingsOpen(true)} />
+          {/* 1. Icon Rail — 60px, always visible */}
+          <IconRail onOpenSettings={() => setSettingsOpen(true)} />
 
-        {/* 2. Rooms Sidebar — 220px on desktop, drawer on mobile */}
-        <LeftSidebar
-          isOpen={sidebarOpen}
-          onToggle={() => setSidebarOpen(false)}
-          onOpenSettings={() => setSettingsOpen(true)}
-        />
+          {/* 2. Rooms Sidebar — 220px on desktop, drawer on mobile */}
+          <LeftSidebar
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen(false)}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
 
-        {/* 3. Main chat area — fills remaining space */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[rgba(255,255,255,0.02)] backdrop-blur-[8px]">
-          {children}
-        </main>
+          {/* 3. Main chat area — fills remaining space */}
+          <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[rgba(255,255,255,0.02)] backdrop-blur-[8px]">
+            {children}
+          </main>
 
-        {/* 4. Right sidebar — online members */}
-        <RightSidebar />
+          {/* 4. Right sidebar — online members */}
+          <RightSidebar />
 
-        {/* Settings Modal */}
-        <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
-      </div>
+          {/* Settings Modal */}
+          <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+        </div>
+      </ErrorBoundary>
     </TooltipProvider>
   )
 }
