@@ -237,8 +237,7 @@ export default function MessageItem({
       ref={messageRef}
       id={`msg-${message.id}`}
       className={cn(
-        'group relative px-4 py-0.5 transition-all duration-150 group-hover:pt-8',
-        isOwn ? 'hover:bg-transparent' : 'hover:bg-[rgba(255,255,255,0.02)]'
+        'group relative px-4 py-0.5 transition-all duration-150',
       )}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
@@ -278,7 +277,7 @@ export default function MessageItem({
           {/* Header */}
           {isGroupStart && !isOwn && (
             <div className="flex items-center gap-2 mb-0.5 px-1">
-              <span className="text-sm font-medium text-[#C4B5FD]">{senderName}</span>
+              <span className="text-sm font-semibold text-[#C4B5FD]">{senderName}</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -326,14 +325,29 @@ export default function MessageItem({
             </div>
           ) : (
             <div
-              className={cn(
-                'rounded-[17px] px-3.5 py-2 leading-relaxed whitespace-pre-wrap break-words animate-slide-up',
-                isOwn
-                  ? 'bg-primary-gradient text-[#2E1065] rounded-br-[5px]'
-                  : 'glass-message text-white rounded-tl-[5px]'
-              )}
+              style={{
+                borderRadius: '16px',
+                padding: '10px 14px',
+                lineHeight: 1.5,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                animation: 'slide-up 0.2s ease-out',
+                ...(isOwn
+                  ? {
+                      background: 'linear-gradient(135deg, #7C3AED, #9333EA)',
+                      color: 'white',
+                      borderTopRightRadius: '4px',
+                      boxShadow: '0 3px 12px rgba(124,58,237,0.3)',
+                    }
+                  : {
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                      color: '#EDEBF7',
+                      borderTopLeftRadius: '4px',
+                    }),
+              }}
             >
-              <p className="text-sm">
+              <p style={{ fontSize: '14px' }}>
                 {highlightSearchText(message.content, searchQuery)}
                 {message.is_edited && (
                   <span className="text-[10px] text-[rgba(255,255,255,0.5)] ml-1">(edited)</span>

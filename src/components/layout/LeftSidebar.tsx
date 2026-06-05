@@ -190,43 +190,53 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
         <div className="fixed inset-0 z-40 bg-[#1E1B4B]/80 lg:hidden" onClick={onToggle} />
       )}
 
-      {/* ── Sidebar: inline styles guarantee 220px column in flex layout ── */}
+      {/* ── Sidebar: inline styles for glass sidebar ── */}
       <aside
         style={{
-          width: '220px',
-          minWidth: '220px',
+          width: '224px',
+          minWidth: '224px',
           flexShrink: 0,
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(20, 15, 60, 0.55)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderRight: '1px solid rgba(255,255,255,0.12)',
+          background: 'rgba(255,255,255,0.03)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
           height: '100%',
           overflow: 'hidden',
         }}
       >
         {/* Table Top Tech label */}
         <div className="px-4 pt-4 pb-2">
-          <p className="text-[10px] font-medium text-[rgba(255,255,255,0.45)] uppercase tracking-widest">
+          <p className="text-[10px] font-medium text-[rgba(255,255,255,0.35)] uppercase tracking-widest">
             Table Top Tech
           </p>
         </div>
 
-        {/* Identity Card */}
+        {/* Identity Card - gradient glass */}
         <div className="px-3 pb-3">
-          <div className="flex items-center gap-3 rounded-[14px] bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.1)] p-3">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              borderRadius: '13px',
+              background: 'linear-gradient(135deg, rgba(167,139,250,0.14), rgba(240,171,252,0.08))',
+              border: '1px solid rgba(255,255,255,0.1)',
+              padding: '12px',
+            }}
+          >
             <Avatar className="h-8 w-8 ring-2 ring-[#34D399]/30 shrink-0">
               <AvatarFallback style={{ background: avatarGradient }} className="text-white text-xs">
                 {initial}
-              </AvatarFallback>
+      </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">
                 {profile?.anonymous_name || 'Loading...'}
               </p>
               <div className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#34D399]" />
+                <span style={{ display: 'inline-block', height: '6px', width: '6px', borderRadius: '50%', background: '#34D399', boxShadow: '0 0 6px #34D399' }} />
                 <span className="text-[10px] text-[rgba(255,255,255,0.7)]">Online</span>
               </div>
             </div>
@@ -245,11 +255,11 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
           </div>
         </div>
 
-        <Separator className="bg-[rgba(255,255,255,0.08)]" />
+        <Separator style={{ background: 'rgba(255,255,255,0.08)' }} />
 
         {/* Rooms header */}
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-[11px] font-medium text-[rgba(255,255,255,0.45)] uppercase tracking-wider">
+          <span className="text-[11px] font-medium text-[rgba(255,255,255,0.35)] uppercase tracking-wider">
             Rooms
           </span>
           <Button
@@ -281,10 +291,10 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
                     onClick={(e) => handleRoomClick(room, e)}
                     onContextMenu={(e) => handleRoomClick(room, e)}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm transition-all duration-150',
+                      'flex items-center gap-2.5 rounded-[11px] px-3 py-2.5 text-sm transition-all duration-150',
                       isActive
-                        ? 'bg-[rgba(255,255,255,0.16)] text-white font-medium'
-                        : 'text-[rgba(255,255,255,0.7)] hover:bg-[rgba(255,255,255,0.06)] hover:text-white'
+                        ? 'bg-[rgba(255,255,255,0.1)] text-white font-semibold'
+                        : 'text-[rgba(255,255,255,0.6)] hover:bg-[rgba(255,255,255,0.05)] hover:text-white'
                     )}
                   >
                     <span className="text-base shrink-0">{room.icon_emoji || '#'}</span>
@@ -294,7 +304,13 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
                       {room.is_confession_box && <Flame className="h-3 w-3 text-orange-400" />}
                       {isMuted && <BellOff className="h-3 w-3 text-[rgba(255,255,255,0.35)]" />}
                       {!isMuted && room.unread_count ? (
-                        <Badge className="h-4 min-w-4 px-1 text-[10px] bg-[#7C3AED]">
+                        <Badge
+                          className="h-4 min-w-4 px-1 text-[10px] font-semibold"
+                          style={{
+                            background: 'linear-gradient(135deg, #A78BFA, #F0ABFC)',
+                            color: '#1E1B4B',
+                          }}
+                        >
                           {room.unread_count}
                         </Badge>
                       ) : null}

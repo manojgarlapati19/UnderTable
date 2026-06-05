@@ -216,8 +216,8 @@ export default function MessageList({
   }
 
   return (
-    <div className="relative flex-1 flex flex-col overflow-hidden">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+    <div className="relative flex-1 flex flex-col overflow-hidden" style={{ background: 'transparent' }}>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto" style={{ background: 'transparent' }}>
         {/* Search results header */}
         {isSearchOpen && searchQuery && (
           <div className="px-4 py-2 border-b border-[rgba(255,255,255,0.08)]">

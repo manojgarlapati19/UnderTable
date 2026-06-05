@@ -18,8 +18,18 @@ export default function TypingIndicator({ users }: TypingIndicatorProps) {
       : `${users[0]} and ${users.length - 1} others are typing`
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 text-xs text-[#8888A0]">
-      <div className="relative">
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 16px',
+        background: 'transparent',
+        fontSize: '11px',
+        color: 'rgba(255,255,255,0.5)',
+      }}
+    >
+      <div style={{ position: 'relative' }}>
         <Avatar className="h-6 w-6">
           <AvatarFallback
             style={{ background: getAvatarGradient(users[0]) }}

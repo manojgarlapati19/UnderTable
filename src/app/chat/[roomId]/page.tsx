@@ -328,8 +328,20 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   return (
     <>
       {/* Room Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.08)] glass-panel shrink-0">
-        <div className="flex items-center gap-3">
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.03)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          padding: '13px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '11px',
+          flexShrink: 0,
+        }}
+      >
+        <div className="flex items-center gap-3 flex-1">
           <span className="text-xl">{room.icon_emoji}</span>
           <div>
             <h1 className="text-sm font-medium text-white">{room.name}</h1>

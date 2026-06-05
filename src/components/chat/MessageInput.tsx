@@ -112,7 +112,6 @@ export default function MessageInput({
     }
     return []
   })
-  console.log('replyTo prop:', replyTo)
   const [showMentionMenu, setShowMentionMenu] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionUsers, setMentionUsers] = useState<{ user_id: string; anonymous_name: string }[]>([])
@@ -345,7 +344,20 @@ export default function MessageInput({
 
       <div className="flex items-end gap-2 p-3">
         {/* Composer box */}
-        <div className="flex-1 flex items-end gap-2 rounded-[14px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.1)] backdrop-blur-[20px] px-3 py-2 transition-all duration-150 focus-within:border-[#C4B5FD] focus-within:ring-1 focus-within:ring-[#C4B5FD]/30">
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: '6px',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '15px',
+            padding: '7px 7px 7px 13px',
+            transition: 'all 0.15s',
+          }}
+          className="focus-within:border-[rgba(167,139,250,0.6)] focus-within:shadow-[0_0_0_3px_rgba(167,139,250,0.12)]"
+        >
           {/* Action buttons */}
           <div className="flex items-center gap-1 pb-1">
             <button
@@ -424,12 +436,28 @@ export default function MessageInput({
           <button
             onClick={handleSend}
             disabled={!content.trim() || isSending || slowModeTimer > 0}
-            className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-full transition-all duration-150 shrink-0',
-              content.trim() && !isSending && slowModeTimer === 0
-                ? 'bg-primary-gradient text-[#2E1065] shadow-glow-sm hover:shadow-glow'
-                : 'bg-[rgba(255,255,255,0.1)] text-[rgba(255,255,255,0.45)]'
-            )}
+            style={{
+              display: 'flex',
+              height: '36px',
+              width: '36px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '11px',
+              transition: 'all 0.15s',
+              flexShrink: 0,
+              ...(content.trim() && !isSending && slowModeTimer === 0
+                ? {
+                    background: 'linear-gradient(135deg, #A78BFA, #F0ABFC)',
+                    color: '#1E1B4B',
+                    boxShadow: '0 3px 10px rgba(167,139,250,0.4)',
+                    cursor: 'pointer',
+                  }
+                : {
+                    background: 'rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.45)',
+                    cursor: 'not-allowed',
+                  }),
+            }}
           >
             <Send className="h-4 w-4" />
           </button>

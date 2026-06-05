@@ -34,34 +34,80 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
   }
 
   return (
-    <aside className="flex w-[60px] flex-col items-center glass-panel border-r border-[rgba(255,255,255,0.08)] shrink-0">
+    <aside
+      style={{
+        width: '58px',
+        minWidth: '58px',
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '14px 0',
+        gap: '10px',
+        background: 'rgba(255,255,255,0.025)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+        height: '100%',
+      }}
+    >
       {/* Ghost Logo */}
-      <div className="flex items-center justify-center h-16 w-full">
-        <Link href="/chat" className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-primary-gradient shadow-glow-sm text-[#2E1065] font-bold">
-          <span className="text-base font-bold text-white">U</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '48px', width: '100%' }}>
+        <Link
+          href="/chat"
+          style={{
+            display: 'flex',
+            height: '38px',
+            width: '38px',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #A78BFA, #F0ABFC)',
+            boxShadow: '0 4px 14px rgba(167,139,250,0.4)',
+            color: '#1E1B4B',
+            fontWeight: 700,
+            fontSize: '18px',
+          }}
+        >
+          U
         </Link>
       </div>
 
       {/* Navigation Icons */}
-      <nav className="flex flex-col items-center gap-1 flex-1 px-3 pt-2">
-        <Link
-          href="/chat"
-          className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
-            isInChat
-              ? 'bg-[rgba(255,255,255,0.18)] text-white'
-              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
+      <nav style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, padding: '0 6px' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          {isInChat && (
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                width: '3px',
+                height: '20px',
+                background: 'linear-gradient(#A78BFA, #F0ABFC)',
+                borderRadius: '2px',
+              }}
+            />
           )}
-          title="Chat"
-        >
-          <MessageSquare className="h-5 w-5" />
-        </Link>
+          <Link
+            href="/chat"
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
+              isInChat
+                ? 'bg-[rgba(167,139,250,0.16)] text-white'
+                : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
+            )}
+            title="Chat"
+          >
+            <MessageSquare className="h-5 w-5" />
+          </Link>
+        </div>
+
         <Link
           href="/search"
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
             isActive('/search')
-              ? 'bg-[rgba(255,255,255,0.18)] text-white'
+              ? 'bg-[rgba(167,139,250,0.16)] text-white'
               : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
           )}
           title="Search"
@@ -70,10 +116,10 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
         </Link>
       </nav>
 
-      <Separator className="mx-3 my-1" />
+      <Separator style={{ width: '24px', margin: '4px 0', background: 'rgba(255,255,255,0.08)' }} />
 
       {/* Bottom: Settings + Logout */}
-      <div className="flex flex-col items-center gap-1 pb-4 px-3">
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', paddingBottom: '12px', paddingLeft: '6px', paddingRight: '6px' }}>
         <button
           onClick={onOpenSettings}
           className="flex h-10 w-10 items-center justify-center rounded-[11px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)] transition-all duration-150"

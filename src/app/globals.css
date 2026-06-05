@@ -16,8 +16,9 @@
   html, body {
     min-height: 100vh;
     background:
-      radial-gradient(120% 80% at 100% 0%, rgba(219,39,119,0.22) 0%, transparent 50%),
-      radial-gradient(110% 90% at 0% 100%, rgba(8,145,178,0.22) 0%, transparent 55%),
+      radial-gradient(120% 80% at 100% 0%, rgba(219,39,119,0.25) 0%, transparent 50%),
+      radial-gradient(110% 90% at 0% 100%, rgba(8,145,178,0.25) 0%, transparent 55%),
+      radial-gradient(80% 60% at 50% 50%, rgba(109,40,217,0.15) 0%, transparent 60%),
       linear-gradient(160deg, #14122B 0%, #0C0B1C 100%);
     background-attachment: fixed;
   }
@@ -75,33 +76,39 @@
   /* Aurora background - full screen fixed */
   .aurora-bg {
     background:
-      radial-gradient(circle at 12% 18%, #6D28D9 0%, transparent 42%),
-      radial-gradient(circle at 88% 22%, #DB2777 0%, transparent 40%),
-      radial-gradient(circle at 70% 90%, #0891B2 0%, transparent 45%),
-      radial-gradient(circle at 25% 85%, #4F46E5 0%, transparent 40%),
-      linear-gradient(135deg, #1E1B4B, #312E81);
+      radial-gradient(120% 80% at 100% 0%, rgba(219,39,119,0.25) 0%, transparent 50%),
+      radial-gradient(110% 90% at 0% 100%, rgba(8,145,178,0.25) 0%, transparent 55%),
+      linear-gradient(160deg, #14122B 0%, #0C0B1C 100%);
+    min-height: 100vh;
   }
 
   /* Glass surface utilities */
   .glass-panel {
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.07);
   }
 
   .glass-card {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.06);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.1);
   }
 
   .glass-message {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.07);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    border-top-left-radius: 4px;
+    color: #EDEBF7;
+  }
+
+  .bg-primary-gradient {
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
   }
 
   .glass-auth {
@@ -123,9 +130,7 @@
 
   /* Chat main area */
   .glass-chat {
-    background: rgba(255,255,255,0.03);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: transparent;
   }
 
   /* Gradient glow for ghost logo */
@@ -172,7 +177,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #A78BFA, #F0ABFC);
+  background: #F0ABFC;
   animation: bounce-dot 1.4s infinite ease-in-out both;
 }
 

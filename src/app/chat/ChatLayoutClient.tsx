@@ -81,7 +81,15 @@ export default function ChatLayoutClient({
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen w-screen overflow-hidden">
+      <div
+        style={{
+          display: 'flex',
+          height: '100vh',
+          width: '100vw',
+          overflow: 'hidden',
+          background: 'transparent',
+        }}
+      >
         {/* Mobile hamburger */}
         <Button
           variant="ghost"
@@ -96,7 +104,7 @@ export default function ChatLayoutClient({
         <IconRail onOpenSettings={() => setSettingsOpen(true)} />
 
         {/* Left Sidebar - Room sidebar */}
-        <div className="flex lg:w-[220px] lg:shrink-0">
+        <div className="flex lg:w-[224px] lg:shrink-0">
           <LeftSidebar
             isOpen={sidebarOpen}
             onToggle={() => setSidebarOpen(false)}
