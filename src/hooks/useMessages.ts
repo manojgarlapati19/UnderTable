@@ -103,29 +103,15 @@ export function useMessages({ roomId, limit = 100 }: { roomId: string; limit?: n
   }, [roomId, limit, supabase])
 
   useEffect(() => {
-    fetchMessages()
+  fetchMessages()
 
-    const channel = supabase
-      .channel(`room-messages-${roomId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'messages',
-        filter: `room_id=eq.${roomId}`,
-      }, () => {
-        fetchMessages()
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'reactions',
-      }, () => {
-        fetchMessages()
-      })
-      .subscribe()
+  // TEMP: comment out realtime to test
+  // const channel = supabase.channel(...)
+  // ...
+  // .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
-  }, [roomId, fetchMessages, supabase])
+  // return () => { supabase.removeChannel(channel) }
+}, [roomId, fetchMessages, supabase])
 
   const sendMessage = useCallback(async (
     content: string,
