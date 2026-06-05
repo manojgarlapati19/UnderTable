@@ -2,7 +2,6 @@
 
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,17 +47,19 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm glass-auth p-8 space-y-6 shadow-2xl">
+      <div className="glass-auth space-y-6">
         {/* Logo */}
-        <div className="text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-[17px] ghost-glow mb-5">
-            <span className="text-2xl font-bold text-[#2E1065]">U</span>
+        <div className="text-center space-y-3">
+          <div className="inline-flex h-[72px] w-[72px] items-center justify-center rounded-[18px] ghost-glow">
+            <span className="text-3xl text-[#1E1B4B]">👻</span>
           </div>
-          <h1 className="text-[26px] font-medium text-white">UnderTable</h1>
-          <p className="text-sm text-[rgba(255,255,255,0.7)] mt-1">
-            What happens UnderTable, stays UnderTable.
-          </p>
-          <p className="text-xs text-[rgba(255,255,255,0.45)]">Table Top Tech</p>
+          <div>
+            <h1 className="text-[26px] font-semibold text-white">UnderTable</h1>
+            <p className="text-[13px] text-[rgba(255,255,255,0.6)] mt-1">
+              What happens UnderTable, stays UnderTable.
+            </p>
+            <p className="text-[11px] text-[rgba(255,255,255,0.35)]">Table Top Tech</p>
+          </div>
         </div>
 
         {/* Error banner */}
@@ -72,7 +73,7 @@ function LoginPage() {
         {/* Login form */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-[12px] text-[rgba(255,255,255,0.7)]">Email</Label>
             <Input
               id="email"
               type="email"
@@ -81,11 +82,12 @@ function LoginPage() {
               placeholder="you@company.com"
               required
               autoComplete="email"
+              className="h-[46px] px-[14px] text-[13px] text-white placeholder:text-[rgba(255,255,255,0.35)] focus-visible:border-[rgba(167,139,250,0.7)] focus-visible:shadow-[0_0_0_3px_rgba(167,139,250,0.15)] focus-visible:ring-0"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-[12px] text-[rgba(255,255,255,0.7)]">Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -95,7 +97,7 @@ function LoginPage() {
                 placeholder="Enter your password"
                 required
                 autoComplete="current-password"
-                className="pr-10"
+                className="h-[46px] px-[14px] pr-10 text-[13px] text-white placeholder:text-[rgba(255,255,255,0.35)] focus-visible:border-[rgba(167,139,250,0.7)] focus-visible:shadow-[0_0_0_3px_rgba(167,139,250,0.15)] focus-visible:ring-0"
               />
               <button
                 type="button"
@@ -107,12 +109,16 @@ function LoginPage() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-10" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full h-[46px] rounded-[13px] text-[14px] font-semibold text-[#1E1B4B] bg-gradient-to-r from-[#A78BFA] to-[#F0ABFC] hover:brightness-110 shadow-[0_4px_14px_rgba(167,139,250,0.4)]"
+            disabled={loading}
+          >
             {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
 
-        <p className="text-center text-xs text-[rgba(255,255,255,0.45)]">
+        <p className="text-center text-[12px] text-[rgba(255,255,255,0.45)]">
           Don&apos;t have an account? You need an invite link to join.
         </p>
       </div>
@@ -122,7 +128,11 @@ function LoginPage() {
 
 export default function LoginPageWrapper() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-auth-bg"><div className="text-[#56566E]">Loading...</div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(120% 80% at 100% 0%, rgba(219,39,119,0.22) 0%, transparent 50%), radial-gradient(110% 90% at 0% 100%, rgba(8,145,178,0.22) 0%, transparent 55%), linear-gradient(160deg, #14122B 0%, #0C0B1C 100%)' }}>
+        <div className="text-[#56566E]">Loading...</div>
+      </div>
+    }>
       <LoginPage />
     </Suspense>
   )

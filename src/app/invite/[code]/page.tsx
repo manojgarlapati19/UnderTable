@@ -21,14 +21,16 @@ export default async function InvitePage({ params }: InvitePageProps) {
   ) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center max-w-sm glass-auth p-8 shadow-2xl">
-          <div className="text-6xl mb-6">🚫</div>
-          <h1 className="text-[26px] font-medium text-white mb-2">
-            Invalid Invite Link
-          </h1>
-          <p className="text-[rgba(255,255,255,0.7)]">
-            This invite link is invalid or has expired. Please ask your admin for a new one.
-          </p>
+        <div className="text-center glass-auth space-y-6">
+          <div className="text-6xl">🚫</div>
+          <div>
+            <h1 className="text-[26px] font-semibold text-white">
+              Invalid Invite Link
+            </h1>
+            <p className="text-[13px] text-[rgba(255,255,255,0.6)] mt-1">
+              This invite link is invalid or has expired. Please ask your admin for a new one.
+            </p>
+          </div>
         </div>
       </div>
     )

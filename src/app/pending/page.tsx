@@ -58,7 +58,7 @@ export default function PendingPage() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(120% 80% at 100% 0%, rgba(219,39,119,0.22) 0%, transparent 50%), radial-gradient(110% 90% at 0% 100%, rgba(8,145,178,0.22) 0%, transparent 55%), linear-gradient(160deg, #14122B 0%, #0C0B1C 100%)' }}>
         <Loader2 className="h-8 w-8 animate-spin text-[#A78BFA]" />
       </div>
     )
@@ -66,16 +66,18 @@ export default function PendingPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="text-center max-w-sm glass-auth p-8 shadow-2xl">
-        <div className="inline-flex h-20 w-20 items-center justify-center rounded-[17px] ghost-glow mb-6">
-          <span className="text-3xl font-bold text-[#2E1065]">U</span>
+      <div className="text-center glass-auth space-y-6">
+        <div className="inline-flex h-[72px] w-[72px] items-center justify-center rounded-[18px] ghost-glow">
+          <span className="text-3xl text-[#1E1B4B]">👻</span>
         </div>
-        <h1 className="text-[26px] font-medium text-white mb-2">
-          You&apos;re on the list!
-        </h1>
-        <p className="text-[rgba(255,255,255,0.7)] mb-6">
-          An admin will approve your account shortly. Please check back soon.
-        </p>
+        <div>
+          <h1 className="text-[26px] font-semibold text-white">
+            You&apos;re on the list!
+          </h1>
+          <p className="text-[13px] text-[rgba(255,255,255,0.6)] mt-1">
+            An admin will approve your account shortly. Please check back soon.
+          </p>
+        </div>
         <div className="flex items-center justify-center gap-2 text-sm text-[rgba(255,255,255,0.45)]">
           <Loader2 className="h-4 w-4 animate-spin text-[#A78BFA]" />
           Waiting for approval...

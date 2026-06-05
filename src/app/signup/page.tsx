@@ -140,16 +140,18 @@ function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm glass-auth p-8 space-y-6 shadow-2xl">
+      <div className="glass-auth space-y-6">
         {/* Header */}
-        <div className="text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-[17px] ghost-glow mb-5">
-            <span className="text-2xl font-bold text-[#2E1065]">U</span>
+        <div className="text-center space-y-3">
+          <div className="inline-flex h-[72px] w-[72px] items-center justify-center rounded-[18px] ghost-glow">
+            <span className="text-3xl text-[#1E1B4B]">👻</span>
           </div>
-          <h1 className="text-[26px] font-medium text-white">Join UnderTable</h1>
-          <p className="text-sm text-[rgba(255,255,255,0.7)] mt-1">
-            What happens UnderTable, stays UnderTable.
-          </p>
+          <div>
+            <h1 className="text-[26px] font-semibold text-white">Join UnderTable</h1>
+            <p className="text-[13px] text-[rgba(255,255,255,0.6)] mt-1">
+              What happens UnderTable, stays UnderTable.
+            </p>
+          </div>
         </div>
 
         {error && (
@@ -161,7 +163,7 @@ function SignupPage() {
         {!error && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label>Choose your anonymous name</Label>
+              <Label className="text-[12px] text-[rgba(255,255,255,0.7)]">Choose your anonymous name</Label>
               <div className="flex flex-wrap gap-2">
                 {suggestions.map((suggestion) => (
                   <button
@@ -180,7 +182,7 @@ function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">or type your own name</Label>
+              <Label htmlFor="name" className="text-[12px] text-[rgba(255,255,255,0.7)]">or type your own name</Label>
               <div className="relative">
                 <Input
                   id="name"
@@ -189,6 +191,7 @@ function SignupPage() {
                   placeholder="Your anonymous name"
                   required
                   minLength={3}
+                  className="h-[46px] px-[14px] text-[13px] text-white placeholder:text-[rgba(255,255,255,0.35)] focus-visible:border-[rgba(167,139,250,0.7)] focus-visible:shadow-[0_0_0_3px_rgba(167,139,250,0.15)] focus-visible:ring-0"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {checkingName ? (
@@ -206,7 +209,7 @@ function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-[12px] text-[rgba(255,255,255,0.7)]">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -214,11 +217,12 @@ function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 required
+                className="h-[46px] px-[14px] text-[13px] text-white placeholder:text-[rgba(255,255,255,0.35)] focus-visible:border-[rgba(167,139,250,0.7)] focus-visible:shadow-[0_0_0_3px_rgba(167,139,250,0.15)] focus-visible:ring-0"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-[12px] text-[rgba(255,255,255,0.7)]">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -227,6 +231,7 @@ function SignupPage() {
                 placeholder="Create a password"
                 required
                 minLength={6}
+                className="h-[46px] px-[14px] text-[13px] text-white placeholder:text-[rgba(255,255,255,0.35)] focus-visible:border-[rgba(167,139,250,0.7)] focus-visible:shadow-[0_0_0_3px_rgba(167,139,250,0.15)] focus-visible:ring-0"
               />
               {passwordStrength && (
                 <div className="flex items-center gap-2">
@@ -256,7 +261,7 @@ function SignupPage() {
 
             <Button
               type="submit"
-              className="w-full h-10"
+              className="w-full h-[46px] rounded-[13px] text-[14px] font-semibold text-[#1E1B4B] bg-gradient-to-r from-[#A78BFA] to-[#F0ABFC] hover:brightness-110 shadow-[0_4px_14px_rgba(167,139,250,0.4)]"
               disabled={loading || !nameAvailable || !name || !email || !password}
             >
               {loading ? 'Creating account...' : 'Join UnderTable'}
@@ -270,7 +275,11 @@ function SignupPage() {
 
 export default function SignupPageWrapper() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-auth-bg"><div className="text-[#56566E]">Loading...</div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(120% 80% at 100% 0%, rgba(219,39,119,0.22) 0%, transparent 50%), radial-gradient(110% 90% at 0% 100%, rgba(8,145,178,0.22) 0%, transparent 55%), linear-gradient(160deg, #14122B 0%, #0C0B1C 100%)' }}>
+        <div className="text-[#56566E]">Loading...</div>
+      </div>
+    }>
       <SignupPage />
     </Suspense>
   )
