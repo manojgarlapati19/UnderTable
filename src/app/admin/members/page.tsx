@@ -28,7 +28,7 @@ export default function AdminMembersPage() {
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .eq('status', tab === 'pending' ? 'pending' : tab === 'approved' ? 'approved' : 'banned')
+      .eq('status', tab === 'pending' ? 'pending' : tab === 'approved' ? 'approved' : tab === 'rejected' ? 'rejected' : 'banned')
       .order('created_at', { ascending: false })
 
     if (data) setMembers(data)
@@ -50,7 +50,7 @@ export default function AdminMembersPage() {
   async function rejectMember(userId: string) {
     const { error } = await supabase
       .from('profiles')
-      .update({ status: 'banned' })
+      .update({ status: 'rejected' })
       .eq('id', userId)
 
     if (!error) {
@@ -116,7 +116,7 @@ export default function AdminMembersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-[26px] font-medium text-white">Members</h1>
-        {selectedIds.size > 0 && tab === 'pending' && (
+        {selectedIds.size > 0 && (tab === 'pending' || tab === 'rejected') && (
           <div className="flex gap-2">
             <Button size="sm" className="bg-[#22C55E] hover:bg-[#16A34A] text-white" onClick={bulkApprove}>Approve all ({selectedIds.size})</Button>
             <Button size="sm" variant="destructive" onClick={bulkReject}>Reject all ({selectedIds.size})</Button>
@@ -128,6 +128,7 @@ export default function AdminMembersPage() {
         <TabsList>
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected</TabsTrigger>
           <TabsTrigger value="banned">Banned</TabsTrigger>
         </TabsList>
 
@@ -189,6 +190,42 @@ export default function AdminMembersPage() {
                   <Button size="sm" variant="ghost" className="text-[#EF4444] hover:text-[#EF4444] hover:bg-[#EF4444]/10" onClick={() => banMember(member.id)}>
                     <Ban className="h-4 w-4" />
                   </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="rejected" className="mt-4">
+          {members.length === 0 ? (
+            <p className="text-sm text-[rgba(255,255,255,0.45)]">No rejected members</p>
+          ) : (
+            <div className="space-y-2">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center gap-3 glass-card rounded-[14px] p-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(member.id)}
+                    onChange={() => toggleSelect(member.id)}
+                    className="rounded border-[#22223A] bg-[#0B0B14] accent-accent"
+                  />
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback style={{ backgroundColor: getAvatarColor(member.anonymous_name) }} className="text-white text-xs">
+                      {member.anonymous_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white">{member.anonymous_name}</p>
+                    <p className="text-xs text-[#56566E]">Rejected</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" className="text-[#22C55E] hover:text-[#22C55E] hover:bg-[#22C55E]/10" onClick={() => approveMember(member.id)}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-[#EF4444] hover:text-[#EF4444] hover:bg-[#EF4444]/10" onClick={() => banMember(member.id)}>
+                      <Ban className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

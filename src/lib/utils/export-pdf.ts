@@ -131,13 +131,22 @@ export function generateRoomDigestPDF(data: RoomDigestData): Blob {
 }
 
 /**
- * Randomises sender labels for anonymity in exports
+ * Fisher-Yates (Knuth) shuffle — unbiased O(n) in-place shuffle.
  */
+function fisherYatesShuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export function generateAnonymousLabels(
   messageUserIds: string[]
 ): Map<string, string> {
   const uniqueIds = [...new Set(messageUserIds)]
-  const shuffled = uniqueIds.sort(() => Math.random() - 0.5)
+  const shuffled = fisherYatesShuffle(uniqueIds)
   const labels = new Map<string, string>()
 
   shuffled.forEach((id, index) => {

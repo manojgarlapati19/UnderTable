@@ -16,64 +16,64 @@ export function usePolls(roomId: string, currentUserId: string) {
   const supabase = useRef(createClient()).current
 
   useEffect(() => {
+    async function loadPolls() {
+      const { data } = await supabase
+        .from('polls')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false })
+
+      if (data) {
+        setPolls(data)
+        // Load votes for all polls
+        data.forEach((poll) => loadVotes(poll.id))
+      }
+      setLoading(false)
+    }
+
+    async function loadVotes(pollId: string) {
+      const { data } = await supabase
+        .from('poll_votes')
+        .select('option_id, user_id')
+        .eq('poll_id', pollId)
+
+      if (data) {
+        setPollVotes((prev) => ({ ...prev, [pollId]: data }))
+      }
+    }
+
+    function subscribeToPolls() {
+      const channel = supabase
+        .channel(`polls-${roomId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'polls', filter: `room_id=eq.${roomId}` },
+          () => loadPolls()
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'poll_votes' },
+          (payload) => {
+            setPollVotes((prev) => ({
+              ...prev,
+              [payload.new.poll_id]: [
+                ...(prev[payload.new.poll_id] || []),
+                { option_id: payload.new.option_id, user_id: payload.new.user_id },
+              ],
+            }))
+          }
+        )
+        .subscribe()
+      return channel
+    }
+
     loadPolls()
     const channel = subscribeToPolls()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [roomId])
-
-  async function loadPolls() {
-    const { data } = await supabase
-      .from('polls')
-      .select('*')
-      .eq('room_id', roomId)
-      .order('created_at', { ascending: false })
-
-    if (data) {
-      setPolls(data)
-      // Load votes for all polls
-      data.forEach((poll) => loadVotes(poll.id))
-    }
-    setLoading(false)
-  }
-
-  async function loadVotes(pollId: string) {
-    const { data } = await supabase
-      .from('poll_votes')
-      .select('option_id, user_id')
-      .eq('poll_id', pollId)
-
-    if (data) {
-      setPollVotes((prev) => ({ ...prev, [pollId]: data }))
-    }
-  }
-
-  function subscribeToPolls() {
-    const channel = supabase
-      .channel(`polls-${roomId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'polls', filter: `room_id=eq.${roomId}` },
-        () => loadPolls()
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'poll_votes' },
-        (payload) => {
-          setPollVotes((prev) => ({
-            ...prev,
-            [payload.new.poll_id]: [
-              ...(prev[payload.new.poll_id] || []),
-              { option_id: payload.new.option_id, user_id: payload.new.user_id },
-            ],
-          }))
-        }
-      )
-      .subscribe()
-    return channel
-  }
+  }, [roomId, supabase])
 
   const vote = useCallback(
     async (pollId: string, optionId: string) => {

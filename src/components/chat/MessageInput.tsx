@@ -120,7 +120,7 @@ export default function MessageInput({
   const emojiPickerRef = useRef<HTMLDivElement>(null)
   const mentionRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -128,6 +128,18 @@ export default function MessageInput({
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`
     }
   }, [content])
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
+      }
+      // Notify parent we stopped typing
+      onTypingChange?.(false)
+    }
+  }, [onTypingChange])
 
   useEffect(() => {
     if (slowModeTimer > 0) {

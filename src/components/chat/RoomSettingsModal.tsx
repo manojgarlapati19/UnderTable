@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Dialog,
@@ -34,10 +34,13 @@ export default function RoomSettingsModal({
   isAdmin,
   onRoomUpdated,
 }: RoomSettingsModalProps) {
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
   const [name, setName] = useState(room.name)
   const [description, setDescription] = useState(room.description || '')
-  const [messageTtlSeconds, setMessageTtlSeconds] = useState<number>(room.message_ttl_seconds || 0)
+  // Use message_ttl_seconds directly (no more hours conversion)
+  const [messageTtlSeconds, setMessageTtlSeconds] = useState<number>(
+    (room as any).message_ttl_seconds ?? (room as any).message_ttl_hours ? (room as any).message_ttl_hours * 3600 : 0
+  )
   const [slowModeSeconds, setSlowModeSeconds] = useState<number>(room.slow_mode_seconds || 0)
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -46,7 +49,9 @@ export default function RoomSettingsModal({
     if (open) {
       setName(room.name)
       setDescription(room.description || '')
-      setMessageTtlSeconds(room.message_ttl_seconds || 0)
+      setMessageTtlSeconds(
+        (room as any).message_ttl_seconds ?? (room as any).message_ttl_hours ? (room as any).message_ttl_hours * 3600 : 0
+      )
       setSlowModeSeconds(room.slow_mode_seconds || 0)
       setEditing(false)
     }
@@ -59,7 +64,11 @@ export default function RoomSettingsModal({
     const updates: Record<string, any> = {}
     if (name !== room.name) updates.name = name
     if (description !== (room.description || '')) updates.description = description
-    if (messageTtlSeconds !== (room.message_ttl_seconds || 0)) updates.message_ttl_seconds = messageTtlSeconds || null
+    // Save TTL in seconds directly (no hours conversion)
+    const savedTtlSeconds = messageTtlSeconds > 0 ? messageTtlSeconds : null
+    if (savedTtlSeconds !== ((room as any).message_ttl_seconds ?? (room as any).message_ttl_hours ? (room as any).message_ttl_hours * 3600 : null)) {
+      updates.message_ttl_seconds = savedTtlSeconds
+    }
     if (slowModeSeconds !== (room.slow_mode_seconds || 0)) updates.slow_mode_seconds = slowModeSeconds || null
 
     if (Object.keys(updates).length === 0) {

@@ -112,17 +112,15 @@ function SignupPage() {
 
       if (profileError) throw profileError
 
-      const { data: inviteLink } = await supabase
-        .from('invite_links')
-        .select('id, uses_count')
-        .eq('code', inviteCode)
-        .single()
+      // Atomically claim the invite code via edge function (bypasses RLS)
+      const { data: claimResult, error: claimError } = await supabase.functions.invoke(
+        'invite-signup',
+        { body: { code: inviteCode } }
+      )
 
-      if (inviteLink) {
-        await supabase
-          .from('invite_links')
-          .update({ uses_count: (inviteLink.uses_count || 0) + 1 })
-          .eq('id', inviteLink.id)
+      if (claimError || !claimResult?.valid) {
+        // Non-critical: the account was created but invite counter may not have incremented
+        console.warn('Failed to claim invite link:', claimError || claimResult?.error)
       }
 
       toast.success('Account created! Wait for admin approval.')

@@ -133,16 +133,39 @@ export function usePresence() {
           }
           typingChannelRef.current = null
         }
+        setTypingUsers([])
         // Create new typing channel for this room
         if (roomId && profileRef.current) {
           const typingChannel = supabase.channel(`typing:${roomId}`, {
-            config: { presence: { key: `typing-${roomId}` } },
+            config: { presence: { key: `typing-${profileRef.current.id}` } },
           })
-          typingChannel.subscribe((status: string, err?: Error) => {
-            if (err) {
-              console.error('Typing channel subscribe error:', err)
-            }
-          })
+          typingChannel
+            .on('presence', { event: 'sync' }, () => {
+              try {
+                const state = typingChannel?.presenceState() || {}
+                const typing: string[] = []
+                for (const key in state) {
+                  const presences = state[key] as any[]
+                  presences?.forEach((p) => {
+                    if (
+                      p.typing &&
+                      p.user_id !== profileRef.current?.id &&
+                      p.anonymous_name
+                    ) {
+                      typing.push(p.anonymous_name)
+                    }
+                  })
+                }
+                setTypingUsers(typing)
+              } catch (err) {
+                console.error('Typing presence sync error:', err)
+              }
+            })
+            .subscribe((status: string, err?: Error) => {
+              if (err) {
+                console.error('Typing channel subscribe error:', err)
+              }
+            })
           typingChannelRef.current = typingChannel
         }
       } catch (err) {
@@ -161,9 +184,6 @@ export function usePresence() {
             anonymous_name: profileRef.current.anonymous_name,
             typing,
           })
-        }
-        if (channelRef.current) {
-          await channelRef.current.track({ typing })
         }
       } catch (err) {
         console.error('Failed to set typing:', err)

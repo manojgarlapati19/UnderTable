@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowDown } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
@@ -21,6 +21,7 @@ interface MessageListProps {
   blockedUserIds: string[]
   searchQuery?: string
   isSearchOpen?: boolean
+  typingUsers?: string[]
   onReply: (messageId: string) => void
   onEdit: (messageId: string, content: string) => void
   onDelete: (messageId: string) => void
@@ -41,6 +42,7 @@ export default function MessageList({
   blockedUserIds,
   searchQuery = '',
   isSearchOpen = false,
+  typingUsers = [],
   onReply,
   onEdit,
   onDelete,
@@ -50,52 +52,18 @@ export default function MessageList({
   onJumpToMessage,
 }: MessageListProps) {
   const [polls, setPolls] = useState<Tables<'polls'>[]>([])
-  const [typingUsers, setTypingUsers] = useState<string[]>([])
   const [hasNewMessages, setHasNewMessages] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const isScrolledUpRef = useRef(false)
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
 
   useEffect(() => {
     loadPolls()
 
-    let typingChannel: ReturnType<typeof supabase.channel> | null = null
     let pollsChannel: ReturnType<typeof supabase.channel> | null = null
 
     const setupChannels = async () => {
-      try {
-        typingChannel = supabase.channel(`typing:${roomId}`, {
-          config: { presence: { key: `typing-${roomId}` } },
-        })
-
-        typingChannel
-          .on('presence', { event: 'sync' }, () => {
-            try {
-              const state = typingChannel?.presenceState() || {}
-              const typing: string[] = []
-              for (const key in state) {
-                const presences = state[key] as any[]
-                presences?.forEach((p) => {
-                  if (p.typing && p.user_id !== currentUserId && p.anonymous_name) {
-                    typing.push(p.anonymous_name)
-                  }
-                })
-              }
-              setTypingUsers(typing)
-            } catch (err) {
-              console.error('Typing presence sync error:', err)
-            }
-          })
-          .subscribe((status, err) => {
-            if (err) {
-              console.error('Typing channel subscribe error:', err)
-            }
-          })
-      } catch (err) {
-        console.error('Failed to setup typing channel:', err)
-      }
-
       try {
         pollsChannel = supabase
           .channel(`polls:${roomId}`)
@@ -124,13 +92,6 @@ export default function MessageList({
     setupChannels()
 
     return () => {
-      if (typingChannel) {
-        try {
-          supabase.removeChannel(typingChannel)
-        } catch (err) {
-          console.error('Failed to remove typing channel:', err)
-        }
-      }
       if (pollsChannel) {
         try {
           supabase.removeChannel(pollsChannel)
@@ -139,7 +100,7 @@ export default function MessageList({
         }
       }
     }
-  }, [roomId])
+  }, [roomId, supabase])
 
   useEffect(() => {
     if (!isScrolledUpRef.current && messages.length > 0) {

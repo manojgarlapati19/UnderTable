@@ -12,10 +12,13 @@ interface ReactionState {
 export function useReactions(messageId: string, currentUserId: string) {
   const [reactions, setReactions] = useState<Record<string, ReactionState>>({})
   const supabase = useRef(createClient()).current
+  const reactionsRef = useRef(reactions)
+  reactionsRef.current = reactions // always keep ref in sync
 
   const toggleReaction = useCallback(
     async (emoji: string) => {
-      const current = reactions[emoji]
+      // Always read the LATEST reactions state via ref, not the closure
+      const current = reactionsRef.current[emoji]
       const isAdding = !current?.hasReacted
 
       // Optimistic update

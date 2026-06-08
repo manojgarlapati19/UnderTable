@@ -58,7 +58,7 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
       }
     }
 
-    const { data: rms } = await supabase.from('rooms').select('*').order('name')
+    const { data: rms } = await supabase.from('rooms').select('id, name, icon_emoji, has_password, is_confession_box').order('name')
     if (rms) setRooms(rms)
 
     const { data: prefs } = await supabase

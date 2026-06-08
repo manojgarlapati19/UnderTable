@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -40,13 +40,13 @@ interface LeftSidebarProps {
 
 interface RoomWithUnread extends Tables<'rooms'> {
   unread_count?: number
-  room_password?: string | null
+  has_password?: boolean | null
 }
 
 export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
   const [profile, setProfile] = useState<Tables<'profiles'> | null>(null)
   const [rooms, setRooms] = useState<RoomWithUnread[]>([])
   const [ghostMode, setGhostMode] = useState(false)
@@ -55,51 +55,64 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
   const [passwordRoom, setPasswordRoom] = useState<RoomWithUnread | null>(null)
   const [passwordInput, setPasswordInput] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const [verifyingPassword, setVerifyingPassword] = useState(false)
   const [contextMenuRoom, setContextMenuRoom] = useState<string | null>(null)
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
-    loadProfile()
+    loadProfile().catch((err) => console.error('Failed to load profile:', err))
     loadRooms()
-    loadMutedRooms()
+    loadMutedRooms().catch((err) => console.error('Failed to load muted rooms:', err))
   }, [])
 
   async function loadProfile() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-    if (data) {
-      setProfile(data)
-      setGhostMode((data as any).ghost_mode || false)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+      if (data) {
+        setProfile(data)
+        setGhostMode((data as any).ghost_mode || false)
+      }
+    } catch (err) {
+      console.error('Failed to load profile:', err)
     }
   }
 
   async function loadRooms() {
-    const { data, error } = await supabase
-      .from('rooms')
-      .select('*')
-      .order('name')
-    if (error) {
-      console.error('Failed to load rooms:', error)
-      return
+    try {
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('id, name, description, icon_emoji, is_confession_box, is_active, has_password, created_at, slow_mode_seconds, message_ttl_minutes')
+        .order('name')
+      if (error) {
+        console.error('Failed to load rooms:', error)
+        return
+      }
+      if (data) setRooms(data as RoomWithUnread[])
+    } catch (err) {
+      console.error('Failed to load rooms:', err)
     }
-    if (data) setRooms(data as RoomWithUnread[])
   }
 
   async function loadMutedRooms() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase
-      .from('notification_preferences')
-      .select('room_id, level')
-      .eq('user_id', user.id)
-    if (data) {
-      const muted = new Set(data.filter((p) => p.level === 'muted').map((p) => p.room_id))
-      setMutedRooms(muted)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('notification_preferences')
+        .select('room_id, level')
+        .eq('user_id', user.id)
+      if (data) {
+        const muted = new Set(data.filter((p) => p.level === 'muted').map((p) => p.room_id))
+        setMutedRooms(muted)
+      }
+    } catch (err) {
+      console.error('Failed to load muted rooms:', err)
     }
   }
 
@@ -146,7 +159,7 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
       setContextMenuPos({ x: e.clientX, y: e.clientY })
       return
     }
-    if (room.room_password) {
+    if (room.has_password) {
       const hasAccess = sessionStorage.getItem(`room_access_${room.id}`)
       if (!hasAccess) {
         e.preventDefault()
@@ -160,15 +173,30 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
     if (isOpen) onToggle()
   }
 
-  function handlePasswordSubmit() {
+  async function handlePasswordSubmit() {
     if (!passwordRoom) return
-    if (passwordInput === passwordRoom.room_password) {
+    setVerifyingPassword(true)
+    setPasswordError('')
+
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-room-password', {
+        body: { room_id: passwordRoom.id, password: passwordInput }
+      })
+
+      if (error || !data?.valid) {
+        setPasswordError(data?.error || 'Incorrect passcode')
+        return
+      }
+
+      // Store a temporary access marker (session-scoped)
       sessionStorage.setItem(`room_access_${passwordRoom.id}`, 'true')
       setShowPasswordGate(false)
       router.push(`/chat/${passwordRoom.id}`)
       if (isOpen) onToggle()
-    } else {
-      setPasswordError('Incorrect passcode')
+    } catch {
+      setPasswordError('Failed to verify passcode. Try again.')
+    } finally {
+      setVerifyingPassword(false)
     }
   }
 
@@ -283,7 +311,7 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
             {rooms.map((room) => {
               const isActive = pathname === `/chat/${room.id}`
               const isMuted = mutedRooms.has(room.id)
-              const hasPassword = !!room.room_password
+              const hasPassword = !!room.has_password
               return (
                 <div key={room.id} className="relative">
                   <Link

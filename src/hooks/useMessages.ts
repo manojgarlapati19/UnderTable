@@ -148,7 +148,8 @@ export function useMessages({ roomId, limit = 100 }: { roomId: string; limit?: n
 
   const sendMessage = useCallback(async (
     content: string,
-    replyTo?: string | null
+    replyTo?: string | null,
+    expiresAt?: string | null
   ) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
@@ -158,6 +159,7 @@ export function useMessages({ roomId, limit = 100 }: { roomId: string; limit?: n
       user_id: user.id,
       content,
       reply_to: replyTo || null,
+      expires_at: expiresAt || null,
     })
 
     if (error) throw error

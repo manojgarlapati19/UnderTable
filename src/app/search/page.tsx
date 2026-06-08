@@ -69,10 +69,12 @@ export default function SearchPage() {
 
   function highlightText(text: string, highlight: string) {
     if (!highlight.trim()) return text
-    const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+    const escaped = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`(${escaped})`, 'gi')
     const parts = text.split(regex)
+    const lowerHighlight = highlight.toLowerCase()
     return parts.map((part, i) =>
-      regex.test(part) ? (
+      part.toLowerCase() === lowerHighlight ? (
         <span key={i} className="text-accent font-medium rounded px-0.5">
           {part}
         </span>

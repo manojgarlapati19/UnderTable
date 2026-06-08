@@ -107,11 +107,11 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     try {
       const { data: roomData } = await supabase
         .from('rooms')
-        .select('room_password')
+        .select('has_password')
         .eq('id', params.roomId)
         .single()
 
-      if (roomData && (roomData as any).room_password) {
+      if (roomData?.has_password) {
         const hasAccess = sessionStorage.getItem(`room_access_${params.roomId}`)
         if (!hasAccess) {
           toast.error('This room is password protected')
@@ -130,7 +130,7 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     try {
       const { data } = await supabase
         .from('rooms')
-        .select('*')
+        .select('id, name, description, icon_emoji, is_confession_box, is_active, has_password, message_ttl_seconds, message_ttl_hours, slow_mode_seconds, created_at')
         .eq('id', params.roomId)
         .single()
 
@@ -176,9 +176,12 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   const handleSend = useCallback(
     async (content: string, replyToId?: string | null) => {
       try {
-        const expiresAt = room?.is_confession_box
-          ? new Date(Date.now() + 60 * 60 * 1000).toISOString()
-          : undefined
+        let expiresAt: string | undefined
+        if (room?.is_confession_box) {
+          expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+        } else if ((room as any)?.message_ttl_seconds) {
+          expiresAt = new Date(Date.now() + (room as any).message_ttl_seconds * 1000).toISOString()
+        }
         await sendMessage(content, replyToId, expiresAt)
       } catch (err) {
         console.error('Failed to send message:', err)

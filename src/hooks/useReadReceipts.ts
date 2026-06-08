@@ -4,7 +4,7 @@ import { useCallback, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export function useReadReceipts(roomId: string) {
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
   const observerRef = useRef<IntersectionObserver | null>(null)
   const seenMessagesRef = useRef<Set<string>>(new Set())
 
