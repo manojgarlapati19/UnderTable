@@ -39,7 +39,7 @@ export default function RoomSettingsModal({
   const [description, setDescription] = useState(room.description || '')
   // Use message_ttl_seconds directly (no more hours conversion)
   const [messageTtlSeconds, setMessageTtlSeconds] = useState<number>(
-    (room as any).message_ttl_seconds ?? (room as any).message_ttl_hours ? (room as any).message_ttl_hours * 3600 : 0
+    room.message_ttl_seconds ?? (room.message_ttl_hours ? room.message_ttl_hours * 3600 : 0)
   )
   const [slowModeSeconds, setSlowModeSeconds] = useState<number>(room.slow_mode_seconds || 0)
   const [saving, setSaving] = useState(false)
@@ -50,7 +50,7 @@ export default function RoomSettingsModal({
       setName(room.name)
       setDescription(room.description || '')
       setMessageTtlSeconds(
-        (room as any).message_ttl_seconds ?? (room as any).message_ttl_hours ? (room as any).message_ttl_hours * 3600 : 0
+        room.message_ttl_seconds ?? (room.message_ttl_hours ? room.message_ttl_hours * 3600 : 0)
       )
       setSlowModeSeconds(room.slow_mode_seconds || 0)
       setEditing(false)
@@ -61,12 +61,13 @@ export default function RoomSettingsModal({
     if (!isAdmin) return
     setSaving(true)
 
-    const updates: Record<string, any> = {}
+    const updates: Tables<'rooms'>['Update'] = {}
     if (name !== room.name) updates.name = name
     if (description !== (room.description || '')) updates.description = description
     // Save TTL in seconds directly (no hours conversion)
     const savedTtlSeconds = messageTtlSeconds > 0 ? messageTtlSeconds : null
-    if (savedTtlSeconds !== ((room as any).message_ttl_seconds ?? (room as any).message_ttl_hours ? (room as any).message_ttl_hours * 3600 : null)) {
+    const currentTtlSeconds = room.message_ttl_seconds ?? (room.message_ttl_hours ? room.message_ttl_hours * 3600 : null)
+    if (savedTtlSeconds !== currentTtlSeconds) {
       updates.message_ttl_seconds = savedTtlSeconds
     }
     if (slowModeSeconds !== (room.slow_mode_seconds || 0)) updates.slow_mode_seconds = slowModeSeconds || null

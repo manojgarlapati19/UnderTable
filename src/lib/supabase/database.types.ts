@@ -8,33 +8,40 @@ export interface Database {
           id: string
           anonymous_name: string
           role: 'user' | 'admin'
-          status: 'pending' | 'approved' | 'banned'
+          status: 'pending' | 'approved' | 'rejected' | 'banned'
           avatar_color: string
           ghost_mode: boolean
           hide_from_leaderboard: boolean
           identity_reset_at: string | null
+          theme: string
+          notifications_enabled: boolean
+          is_admin: boolean
           created_at: string
         }
         Insert: {
           id: string
           anonymous_name: string
           role?: 'user' | 'admin'
-          status?: 'pending' | 'approved' | 'banned'
+          status?: 'pending' | 'approved' | 'rejected' | 'banned'
           avatar_color: string
           ghost_mode?: boolean
           hide_from_leaderboard?: boolean
           identity_reset_at?: string | null
+          theme?: string
+          notifications_enabled?: boolean
           created_at?: string
         }
         Update: {
           id?: string
           anonymous_name?: string
           role?: 'user' | 'admin'
-          status?: 'pending' | 'approved' | 'banned'
+          status?: 'pending' | 'approved' | 'rejected' | 'banned'
           avatar_color?: string
           ghost_mode?: boolean
           hide_from_leaderboard?: boolean
           identity_reset_at?: string | null
+          theme?: string
+          notifications_enabled?: boolean
           created_at?: string
         }
       }
@@ -48,8 +55,12 @@ export interface Database {
           is_private: boolean
           is_confession_box: boolean
           message_ttl_hours: number | null
+          message_ttl_seconds: number | null
           slow_mode_seconds: number
           is_readonly: boolean
+          is_active: boolean
+          has_password: boolean
+          room_password: string | null
           created_by: string
           created_at: string
         }
@@ -62,8 +73,12 @@ export interface Database {
           is_private?: boolean
           is_confession_box?: boolean
           message_ttl_hours?: number | null
+          message_ttl_seconds?: number | null
           slow_mode_seconds?: number
           is_readonly?: boolean
+          is_active?: boolean
+          has_password?: boolean
+          room_password?: string | null
           created_by: string
           created_at?: string
         }
@@ -76,8 +91,12 @@ export interface Database {
           is_private?: boolean
           is_confession_box?: boolean
           message_ttl_hours?: number | null
+          message_ttl_seconds?: number | null
           slow_mode_seconds?: number
           is_readonly?: boolean
+          is_active?: boolean
+          has_password?: boolean
+          room_password?: string | null
           created_by?: string
           created_at?: string
         }
@@ -323,6 +342,9 @@ export interface Database {
           reported_by: string
           reason: string
           status: 'pending' | 'reviewed' | 'dismissed'
+          resolved_by: string | null
+          resolution: string | null
+          resolved_at: string | null
           created_at: string
         }
         Insert: {
@@ -331,6 +353,9 @@ export interface Database {
           reported_by: string
           reason: string
           status?: 'pending' | 'reviewed' | 'dismissed'
+          resolved_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
           created_at?: string
         }
         Update: {
@@ -339,6 +364,9 @@ export interface Database {
           reported_by?: string
           reason?: string
           status?: 'pending' | 'reviewed' | 'dismissed'
+          resolved_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
           created_at?: string
         }
       }

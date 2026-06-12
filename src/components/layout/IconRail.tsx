@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   MessageSquare,
   Search,
+  Bookmark,
   Settings,
   LogOut,
 } from 'lucide-react'
@@ -110,9 +111,22 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
               ? 'bg-[rgba(167,139,250,0.16)] text-white'
               : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
           )}
-          title="Search"
+          title="Search (Ctrl+K)"
         >
           <Search className="h-5 w-5" />
+        </Link>
+
+        <Link
+          href="/bookmarks"
+          className={cn(
+            'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
+            isActive('/bookmarks')
+              ? 'bg-[rgba(167,139,250,0.16)] text-white'
+              : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
+          )}
+          title="Bookmarks (Ctrl+B)"
+        >
+          <Bookmark className="h-5 w-5" />
         </Link>
       </nav>
 

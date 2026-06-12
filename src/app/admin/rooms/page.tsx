@@ -157,7 +157,7 @@ export default function AdminRoomsPage() {
       is_confession_box: room.is_confession_box,
       message_ttl_hours: room.message_ttl_hours?.toString() || '',
       slow_mode_seconds: room.slow_mode_seconds.toString(),
-      room_password: (room as any).room_password || '',
+      room_password: room.room_password || '',
     })
   }
 
@@ -181,7 +181,7 @@ export default function AdminRoomsPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-white">{room.name}</span>
-                {(room as any).room_password && <Lock className="h-3 w-3 text-[#A78BFA]" />}
+                {room.room_password && <Lock className="h-3 w-3 text-[#A78BFA]" />}
                 {room.is_private && <Lock className="h-3 w-3 text-[#56566E]" />}
                 {room.is_confession_box && <Flame className="h-3 w-3 text-orange-500" />}
               </div>

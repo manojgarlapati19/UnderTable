@@ -7,6 +7,7 @@ import IconRail from '@/components/layout/IconRail'
 import LeftSidebar from '@/components/layout/LeftSidebar'
 import RightSidebar from '@/components/layout/RightSidebar'
 import SettingsModal from '@/components/layout/SettingsModal'
+import { useCurrentRoomId } from '@/lib/utils/current-room'
 import { Loader2, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -18,6 +19,7 @@ export default function ChatLayoutClient({
 }) {
   const router = useRouter()
   const supabase = createClient()
+  const currentRoomId = useCurrentRoomId()
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -31,6 +33,14 @@ export default function ChatLayoutClient({
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault()
         router.push('/search')
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        const target = e.target as HTMLElement | null
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+          return
+        }
+        e.preventDefault()
+        router.push('/bookmarks')
       }
     },
     [router]
@@ -118,7 +128,7 @@ export default function ChatLayoutClient({
         </main>
 
         {/* Right Sidebar */}
-        <RightSidebar />
+        <RightSidebar currentRoomId={currentRoomId ?? undefined} />
 
         {/* Settings Modal */}
         <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />

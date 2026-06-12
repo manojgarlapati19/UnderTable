@@ -76,7 +76,7 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
         .single()
       if (data) {
         setProfile(data)
-        setGhostMode((data as any).ghost_mode || false)
+        setGhostMode(data.ghost_mode || false)
       }
     } catch (err) {
       console.error('Failed to load profile:', err)
@@ -87,7 +87,7 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .select('id, name, description, icon_emoji, is_confession_box, is_active, has_password, created_at, slow_mode_seconds, message_ttl_minutes')
+        .select('id, name, description, icon_emoji, is_confession_box, is_active, has_password, created_at, slow_mode_seconds, message_ttl_hours, message_ttl_seconds')
         .order('name')
       if (error) {
         console.error('Failed to load rooms:', error)
@@ -122,7 +122,7 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
     const newValue = !ghostMode
     const { error } = await supabase
       .from('profiles')
-      .update({ ghost_mode: newValue } as any)
+      .update({ ghost_mode: newValue })
       .eq('id', profile.id)
     if (!error) {
       setGhostMode(newValue)

@@ -9,10 +9,11 @@ import MessageItem from './MessageItem'
 import PollCard from './PollCard'
 import TypingIndicator from './TypingIndicator'
 import type { Tables } from '@/lib/supabase/database.types'
+import type { SimpleMessage } from '@/hooks/useMessages'
 
 interface MessageListProps {
   roomId: string
-  messages: any[]
+  messages: SimpleMessage[]
   loading: boolean
   currentUserId: string
   isAdmin: boolean
@@ -229,13 +230,12 @@ export default function MessageList({
               )
             }
             const msg = item.data
-            const prevMsg = idx > 0 && allItems[idx - 1].type === 'message'
-              ? allItems[idx - 1].data
-              : null
+            const prevItem = idx > 0 ? allItems[idx - 1] : null
+            const prevMsg = prevItem?.type === 'message' ? prevItem.data : null
             const isGroupStart =
               !prevMsg ||
-              (prevMsg as any).user_id !== msg.user_id ||
-              item.ts - allItems[idx - 1].ts > 5 * 60 * 1000
+              prevMsg.user_id !== msg.user_id ||
+              item.ts - prevItem!.ts > 5 * 60 * 1000
 
             // Dim non-matching messages when search is active
             const isDimmed = isSearchOpen && searchQuery &&

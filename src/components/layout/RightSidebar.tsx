@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { usePresence } from '@/hooks/usePresence'
 import { cn } from '@/lib/utils/cn'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -9,109 +8,16 @@ import { Badge } from '@/components/ui/badge'
 import { getAvatarColor } from '@/lib/utils/avatar-color'
 import { Ghost } from 'lucide-react'
 
-interface OnlineUser {
-  user_id: string
-  anonymous_name: string
-  avatar_color: string
-  current_room: string | null
-  ghost_mode: boolean
-  last_seen: string
-  is_idle: boolean
-}
-
 interface RightSidebarProps {
   currentRoomId?: string
 }
 
 export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
-  const supabase = createClient()
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
+  const { visibleUsers } = usePresence()
 
-  useEffect(() => {
-    const channel = supabase.channel('online-users', {
-      config: { presence: { key: 'online-users' } },
-    })
-
-    let idleTimer: NodeJS.Timeout
-    let trackedState: Record<string, any> = {}
-
-    const resetIdle = () => {
-      clearTimeout(idleTimer)
-      idleTimer = setTimeout(async () => {
-        if (Object.keys(trackedState).length > 0) {
-          await channel.track({ ...trackedState, is_idle: true })
-        }
-      }, 2 * 60 * 1000)
-    }
-
-    const handleActivity = () => {
-      if (Object.keys(trackedState).length > 0) {
-        channel.track({ ...trackedState, is_idle: false, last_seen: new Date().toISOString() })
-      }
-      resetIdle()
-    }
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        const users: OnlineUser[] = []
-        for (const key in state) {
-          const presences = state[key] as any[]
-          if (presences && presences.length > 0) {
-            const p = presences[0]
-            users.push({
-              user_id: p.user_id,
-              anonymous_name: p.anonymous_name,
-              avatar_color: p.avatar_color,
-              current_room: p.current_room,
-              ghost_mode: p.ghost_mode,
-              last_seen: p.last_seen || new Date().toISOString(),
-              is_idle: p.is_idle || false,
-            })
-          }
-        }
-        setOnlineUsers(users)
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          const { data: { user } } = await supabase.auth.getUser()
-          if (!user) return
-
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('anonymous_name, avatar_color, ghost_mode')
-            .eq('id', user.id)
-            .single()
-
-          if (profile) {
-            trackedState = {
-              user_id: user.id,
-              anonymous_name: profile.anonymous_name,
-              avatar_color: profile.avatar_color,
-              current_room: currentRoomId || null,
-              ghost_mode: profile.ghost_mode,
-              last_seen: new Date().toISOString(),
-              is_idle: false,
-            }
-            await channel.track(trackedState)
-            resetIdle()
-          }
-        }
-      })
-
-    const events = ['mousedown', 'keydown', 'mousemove', 'touchstart']
-    events.forEach((event) => window.addEventListener(event, handleActivity))
-
-    return () => {
-      channel.unsubscribe()
-      events.forEach((event) => window.removeEventListener(event, handleActivity))
-      clearTimeout(idleTimer)
-    }
-  }, [currentRoomId])
-
-  const visibleUsers = onlineUsers.filter((u) => !u.ghost_mode)
-  const ghostUsers = onlineUsers.filter((u) => u.ghost_mode)
-  const roomUsers = visibleUsers.filter((u) => u.current_room === currentRoomId)
+  const onlineUsers = visibleUsers.filter((u) => !u.ghost_mode)
+  const ghostUsers = visibleUsers.filter((u) => u.ghost_mode)
+  const roomUsers = onlineUsers.filter((u) => u.current_room === currentRoomId)
 
   return (
     <aside
@@ -135,17 +41,17 @@ export default function RightSidebar({ currentRoomId }: RightSidebarProps) {
           <span style={{ display: 'inline-block', height: '8px', width: '8px', borderRadius: '50%', background: '#34D399', boxShadow: '0 0 6px #34D399' }} />
           <span style={{ color: 'white', fontWeight: 600, fontSize: '14px' }}>Online Now</span>
           <Badge variant="secondary" style={{ marginLeft: 'auto', fontSize: '10px' }}>
-            {visibleUsers.length}
+            {onlineUsers.length}
           </Badge>
         </div>
       </div>
 
       <ScrollArea style={{ flex: 1 }}>
         <div style={{ padding: '12px' }}>
-          {visibleUsers.length > 0 ? (
+          {onlineUsers.length > 0 ? (
             <div className="space-y-1">
               <p className="text-[10px] font-medium text-[rgba(255,255,255,0.35)] uppercase tracking-wider">Online</p>
-              {visibleUsers.map((user) => {
+              {onlineUsers.map((user) => {
                 const color = getAvatarColor(user.anonymous_name)
                 return (
                   <div

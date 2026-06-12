@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useMessages } from '@/hooks/useMessages'
 import { usePresence } from '@/hooks/usePresence'
-import { useNotifications } from '@/hooks/useNotifications'
 import { cn } from '@/lib/utils/cn'
 import MessageList from '@/components/chat/MessageList'
 import MessageInput from '@/components/chat/MessageInput'
@@ -16,8 +15,16 @@ import RoomSettingsModal from '@/components/chat/RoomSettingsModal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Pin, Settings, Search, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { setCurrentRoom } from '@/lib/utils/current-room'
 import type { Tables } from '@/lib/supabase/database.types'
 
 interface RoomPageProps {
@@ -27,8 +34,6 @@ interface RoomPageProps {
 export default function ChatRoomPage({ params }: RoomPageProps) {
   const router = useRouter()
   const supabase = createClient()
-  const notifications = useNotifications() || {}
-  const notifyNewMessage = (notifications as any).notifyNewMessage || (() => {})
 
   const [room, setRoom] = useState<Tables<'rooms'> | null>(null)
   const [profile, setProfile] = useState<Tables<'profiles'> | null>(null)
@@ -46,6 +51,11 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [isCheckingAccess, setIsCheckingAccess] = useState(true)
 
+  // Confirmation dialogs
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [reportTarget, setReportTarget] = useState<string | null>(null)
+  const [reportReason, setReportReason] = useState<string>('Inappropriate')
+
   // Debounce search by 300ms
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300)
@@ -61,7 +71,7 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   const setTyping = presence?.setTyping || (() => {})
   const visibleUsers = presence?.visibleUsers || []
 
-  const onlineCount = visibleUsers.filter((u: any) => u.current_room === params.roomId).length
+  const onlineCount = visibleUsers.filter((u) => u.current_room === params.roomId).length
 
   useEffect(() => {
     checkRoomAccess()
@@ -71,6 +81,7 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
     try {
       updateCurrentRoom(params.roomId)
+      setCurrentRoom(params.roomId)
     } catch (err) {
       console.error('Failed to update current room on mount:', err)
     }
@@ -78,6 +89,7 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     return () => {
       try {
         updateCurrentRoom(null)
+        setCurrentRoom(null)
       } catch (err) {
         console.error('Failed to update current room on unmount:', err)
       }
@@ -179,8 +191,8 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         let expiresAt: string | undefined
         if (room?.is_confession_box) {
           expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
-        } else if ((room as any)?.message_ttl_seconds) {
-          expiresAt = new Date(Date.now() + (room as any).message_ttl_seconds * 1000).toISOString()
+        } else if (room?.message_ttl_seconds) {
+          expiresAt = new Date(Date.now() + room.message_ttl_seconds * 1000).toISOString()
         }
         await sendMessage(content, replyToId, expiresAt)
       } catch (err) {
@@ -218,16 +230,22 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
   const handleDelete = useCallback(
     async (messageId: string) => {
-      if (confirm('Delete this message?')) {
-        try {
-          await deleteMessage(messageId)
-        } catch {
-          toast.error('Failed to delete message')
-        }
-      }
+      setDeleteTargetId(messageId)
     },
-    [deleteMessage]
+    []
   )
+
+  async function confirmDelete() {
+    if (!deleteTargetId) return
+    try {
+      await deleteMessage(deleteTargetId)
+      toast.success('Message deleted')
+    } catch {
+      toast.error('Failed to delete message')
+    } finally {
+      setDeleteTargetId(null)
+    }
+  }
 
   const handlePin = useCallback(
     async (messageId: string) => {
@@ -251,27 +269,29 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   )
 
   const handleReport = useCallback(
-    async (messageId: string) => {
-      const reason = prompt('Select reason:\n1. Harassment\n2. Spam\n3. Inappropriate\n4. Other')
-      if (!reason || !profile) return
-
-      const reasonMap: Record<string, string> = {
-        '1': 'Harassment', '2': 'Spam', '3': 'Inappropriate', '4': 'Other',
-      }
-
-      try {
-        await supabase.from('reports').insert({
-          message_id: messageId,
-          reported_by: profile.id,
-          reason: reasonMap[reason] || reason,
-        })
-        toast.success('Message reported')
-      } catch (err) {
-        console.error('Failed to report message:', err)
-      }
+    (messageId: string) => {
+      setReportTarget(messageId)
+      setReportReason('Inappropriate')
     },
-    [profile, supabase]
+    []
   )
+
+  async function submitReport() {
+    if (!reportTarget || !profile) return
+    try {
+      await supabase.from('reports').insert({
+        message_id: reportTarget,
+        reported_by: profile.id,
+        reason: reportReason,
+      })
+      toast.success('Message reported')
+    } catch (err) {
+      console.error('Failed to report message:', err)
+      toast.error('Failed to report message')
+    } finally {
+      setReportTarget(null)
+    }
+  }
 
   const handleBlock = useCallback(
     async (userId: string) => {
@@ -491,6 +511,67 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         isAdmin={isAdmin}
         onRoomUpdated={loadRoom}
       />
+
+      {/* Delete Confirmation */}
+      <Dialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null) }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Delete message?</DialogTitle>
+            <DialogDescription>
+              This will remove the message for everyone. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setDeleteTargetId(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Dialog */}
+      <Dialog open={!!reportTarget} onOpenChange={(open) => { if (!open) setReportTarget(null) }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Report message</DialogTitle>
+            <DialogDescription>
+              Why are you reporting this message? Admins will review it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {(['Harassment', 'Spam', 'Inappropriate', 'Other'] as const).map((reason) => (
+              <label
+                key={reason}
+                className={cn(
+                  'flex items-center gap-3 rounded-[10px] border px-3 py-2 cursor-pointer transition-colors',
+                  reportReason === reason
+                    ? 'border-accent bg-[rgba(167,139,250,0.12)]'
+                    : 'border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)]'
+                )}
+              >
+                <input
+                  type="radio"
+                  name="report-reason"
+                  value={reason}
+                  checked={reportReason === reason}
+                  onChange={() => setReportReason(reason)}
+                  className="accent-[#A78BFA]"
+                />
+                <span className="text-sm text-white">{reason}</span>
+              </label>
+            ))}
+          </div>
+          <div className="flex justify-end gap-3 mt-2">
+            <Button variant="outline" onClick={() => setReportTarget(null)}>
+              Cancel
+            </Button>
+            <Button onClick={submitReport}>Submit Report</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

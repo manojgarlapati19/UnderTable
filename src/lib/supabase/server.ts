@@ -32,11 +32,6 @@ export async function createServerSupabaseClient() {
   )
 }
 
-export async function createAdminClient() {
-  const supabase = await createServerSupabaseClient()
-  return supabase
-}
-
 export async function getServiceRoleClient() {
   const { createClient } = await import('@supabase/supabase-js')
   return createClient<Database>(
