@@ -11,28 +11,26 @@ import {
   PieChart,
   Pie,
   Cell,
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts'
-import { useTheme } from 'next-themes'
 import { Loader2 } from 'lucide-react'
+
+type ChartDatum = Record<string, number | string>
+type MessageCreatedAt = { created_at: string }
+type RoomMessage = { room_id: string; rooms: { name: string; icon_emoji: string } }
 
 export default function AdminAnalyticsPage() {
   const supabase = createClient()
-  const { theme } = useTheme()
   const [timeRange, setTimeRange] = useState('7d')
   const [loading, setLoading] = useState(true)
-  const [messageData, setMessageData] = useState<any[]>([])
-  const [hourData, setHourData] = useState<any[]>([])
-  const [roomData, setRoomData] = useState<any[]>([])
-  const [reactionData, setReactionData] = useState<any[]>([])
-  const [memberGrowth, setMemberGrowth] = useState<any[]>([])
+  const [messageData, setMessageData] = useState<ChartDatum[]>([])
+  const [hourData, setHourData] = useState<ChartDatum[]>([])
+  const [roomData, setRoomData] = useState<ChartDatum[]>([])
+  const [reactionData, setReactionData] = useState<ChartDatum[]>([])
   const [stats, setStats] = useState({
     totalMessages: 0,
     totalMembers: 0,
@@ -41,7 +39,6 @@ export default function AdminAnalyticsPage() {
     avgMessagesPerDay: 0,
   })
 
-  const isDark = true
   const textColor = 'rgba(255,255,255,0.7)'
 
   useEffect(() => {
@@ -54,12 +51,13 @@ export default function AdminAnalyticsPage() {
     const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
 
     try {
-      const { data: messages } = await supabase
+      const { data: messagesRaw } = await supabase
         .from('messages')
         .select('created_at')
         .gte('created_at', startDate)
         .eq('is_deleted', false)
 
+      const messages = messagesRaw as unknown as MessageCreatedAt[] | null
       if (messages) {
         const dayCounts: Record<string, number> = {}
         const hourCounts: Record<string, number> = {}
@@ -94,14 +92,15 @@ export default function AdminAnalyticsPage() {
         )
       }
 
-      const { data: roomMessages } = await supabase
+      const { data: roomMessagesRaw } = await supabase
         .from('messages')
         .select('room_id, rooms!inner(name, icon_emoji)')
         .gte('created_at', startDate)
 
+      const roomMessages = roomMessagesRaw as unknown as RoomMessage[] | null
       if (roomMessages) {
         const roomCounts: Record<string, { count: number; name: string; emoji: string }> = {}
-        roomMessages.forEach((m: any) => {
+        roomMessages.forEach((m) => {
           const key = m.room_id
           if (!roomCounts[key]) {
             roomCounts[key] = { count: 0, name: m.rooms.name, emoji: m.rooms.icon_emoji }
@@ -117,11 +116,12 @@ export default function AdminAnalyticsPage() {
         )
       }
 
-      const { data: reactions } = await supabase
+      const { data: reactionsRaw } = await supabase
         .from('reactions')
         .select('emoji')
         .gte('created_at', startDate)
 
+      const reactions = reactionsRaw as unknown as { emoji: string }[] | null
       if (reactions) {
         const reactionCounts: Record<string, number> = {}
         reactions.forEach((r) => {

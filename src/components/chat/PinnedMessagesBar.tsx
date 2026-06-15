@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { cn } from '@/lib/utils/cn'
-import { Pin, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Pin } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface PinnedMessagesBarProps {
@@ -12,10 +10,37 @@ interface PinnedMessagesBarProps {
   accentColor: string
 }
 
+type PinnedMessage = {
+  id: string
+  message_id: string
+  created_at: string
+  messages: { content: string; profiles: { anonymous_name: string } } | null
+}
+
 export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessagesBarProps) {
-  const [pinnedMessages, setPinnedMessages] = useState<any[]>([])
+  const [pinnedMessages, setPinnedMessages] = useState<PinnedMessage[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const supabase = createClient()
+
+  const loadPinnedMessages = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('pinned_messages')
+        .select(`
+          id,
+          message_id,
+          created_at,
+          messages!inner(content, profiles!inner(anonymous_name))
+        `)
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false })
+        .limit(3)
+
+      if (data) setPinnedMessages(data as PinnedMessage[])
+    } catch (err) {
+      console.error('Failed to load pinned messages:', err)
+    }
+  }, [roomId, supabase])
 
   useEffect(() => {
     loadPinnedMessages()
@@ -59,27 +84,7 @@ export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessage
         }
       }
     }
-  }, [roomId])
-
-  async function loadPinnedMessages() {
-    try {
-      const { data } = await supabase
-        .from('pinned_messages')
-        .select(`
-          id,
-          message_id,
-          created_at,
-          messages!inner(content, profiles!inner(anonymous_name))
-        `)
-        .eq('room_id', roomId)
-        .order('created_at', { ascending: false })
-        .limit(3)
-
-      if (data) setPinnedMessages(data)
-    } catch (err) {
-      console.error('Failed to load pinned messages:', err)
-    }
-  }
+  }, [roomId, supabase, loadPinnedMessages])
 
   if (pinnedMessages.length === 0) return null
 

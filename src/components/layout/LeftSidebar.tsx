@@ -12,6 +12,7 @@ import {
   Ghost,
   BellOff,
   Bell,
+  Loader2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/cn'
@@ -404,10 +405,23 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
             />
             {passwordError && <p className="text-xs text-red-400">{passwordError}</p>}
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => { setShowPasswordGate(false); setPasswordRoom(null) }}>
+              <Button
+                variant="outline"
+                onClick={() => { setShowPasswordGate(false); setPasswordRoom(null) }}
+                disabled={verifyingPassword}
+              >
                 Cancel
               </Button>
-              <Button onClick={handlePasswordSubmit}>Enter Room</Button>
+              <Button onClick={handlePasswordSubmit} disabled={verifyingPassword}>
+                {verifyingPassword ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Verifying…
+                  </>
+                ) : (
+                  'Enter Room'
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>

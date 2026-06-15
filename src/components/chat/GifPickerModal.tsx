@@ -18,11 +18,19 @@ interface GifPickerModalProps {
   onSelect: (gifUrl: string) => void
 }
 
+interface TenorGif {
+  id: string
+  url: string
+  media_formats?: {
+    gif?: { url: string }
+    tinygif?: { url: string }
+  }
+}
+
 export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPickerModalProps) {
   const [query, setQuery] = useState('')
-  const [gifs, setGifs] = useState<any[]>([])
+  const [gifs, setGifs] = useState<TenorGif[]>([])
   const [loading, setLoading] = useState(false)
-  const [selectedGif, setSelectedGif] = useState<string | null>(null)
 
   async function searchGifs() {
     if (!query.trim()) return
@@ -32,7 +40,7 @@ export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPick
       const res = await fetch(
         `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${process.env.NEXT_PUBLIC_TENOR_API_KEY}&limit=20`
       )
-      const data = await res.json()
+      const data: { results?: TenorGif[] } = await res.json()
       setGifs(data.results || [])
     } catch (error) {
       console.error('Failed to search GIFs:', error)
@@ -42,7 +50,6 @@ export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPick
   }
 
   function handleSelect(gifUrl: string) {
-    setSelectedGif(gifUrl)
     onSelect(gifUrl)
     onOpenChange(false)
   }
@@ -74,7 +81,7 @@ export default function GifPickerModal({ open, onOpenChange, onSelect }: GifPick
               </div>
             ) : gifs.length > 0 ? (
               <div className="grid grid-cols-2 gap-2">
-                {gifs.map((gif: any) => (
+                {gifs.map((gif) => (
                   <button
                     key={gif.id}
                     onClick={() => handleSelect(gif.media_formats?.gif?.url || gif.url)}

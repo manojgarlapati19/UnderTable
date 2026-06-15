@@ -55,7 +55,7 @@ export function useReactions(messageId: string, currentUserId: string) {
             .eq('user_id', currentUserId)
             .eq('emoji', emoji)
         }
-      } catch (error) {
+      } catch {
         // Revert on error
         setReactions((prev) => {
           const next = { ...prev }

@@ -2,42 +2,169 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/lib/supabase/database.types'
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 const IDLE_TIMEOUT_MS = 2 * 60 * 1000
+const TRACK_THROTTLE_MS = 10_000
 
 export interface PresenceUser {
   user_id: string
   anonymous_name: string
   avatar_color: string
   current_room: string | null
-  ghost_mode?: boolean
+  ghost_mode: boolean
   last_seen: string
   is_idle: boolean
 }
 
+interface PresenceTrackPayload {
+  user_id: string
+  anonymous_name: string
+  avatar_color: string
+  current_room: string | null
+  ghost_mode: boolean
+  last_seen: string
+  is_idle: boolean
+}
+
+interface TypingTrackPayload {
+  user_id: string
+  anonymous_name: string
+  typing: boolean
+}
+
+// Minimal shape of a Supabase realtime channel — the public types are not
+// fully exported, so we use a structural alias.
+type RealtimeChannel = {
+  on: (
+    event: 'presence',
+    options: { event: 'sync' | 'join' | 'leave' },
+    cb: (payload?: unknown) => void
+  ) => RealtimeChannel
+  subscribe: (
+    cb?: (status: string, err?: Error) => void
+  ) => RealtimeChannel
+  track: (payload: PresenceTrackPayload | TypingTrackPayload) => Promise<unknown>
+  presenceState: () => Record<string, PresenceTrackPayload[] | TypingTrackPayload[]>
+  unsubscribe: () => Promise<unknown>
+}
+
+type SupabaseLike = {
+  channel: (name: string, opts?: { config?: { presence?: { key?: string } } }) => RealtimeChannel
+  removeChannel: (ch: RealtimeChannel) => Promise<unknown>
+  auth: { getUser: () => Promise<{ data: { user: { id: string } | null } }> }
+  from: (table: 'profiles') => {
+    select: (cols: string) => {
+      eq: (col: 'id', val: string) => {
+        single: () => Promise<{ data: Pick<ProfileRow, 'id' | 'anonymous_name' | 'avatar_color' | 'ghost_mode'> | null }>
+      }
+    }
+  }
+}
+
+const supabase = createClient() as unknown as SupabaseLike
+
 export function usePresence() {
   const [visibleUsers, setVisibleUsers] = useState<PresenceUser[]>([])
   const [typingUsers, setTypingUsers] = useState<string[]>([])
-  const supabase = useRef(createClient()).current
-  // Supabase realtime channel types are not exported; keep as opaque refs
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const channelRef = useRef<any>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const profileRef = useRef<any>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const typingChannelRef = useRef<any>(null)
+
+  const channelRef = useRef<RealtimeChannel | null>(null)
+  const profileRef = useRef<Pick<ProfileRow, 'id' | 'anonymous_name' | 'avatar_color' | 'ghost_mode'> | null>(null)
+  const typingChannelRef = useRef<RealtimeChannel | null>(null)
   const currentRoomRef = useRef<string | null>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const currentUserIdRef = useRef<string | null>(null)
+
+  // Throttle bookkeeping. `lastTrackAt` is a number when we last successfully
+  // sent a track; the throttled call short-circuits if we're inside the
+  // throttle window. `pendingTrack` is set when a track is requested inside
+  // the window so we fire one final update when the window expires.
+  const lastTrackAtRef = useRef<number>(0)
+  const pendingTrackRef = useRef<PresenceTrackPayload | null>(null)
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Serial counter ensures we only apply the *latest* track payload when
+  // an old, in-flight track resolves.
+  const trackSeqRef = useRef<number>(0)
+
+  const buildPayload = useCallback(
+    (is_idle: boolean, roomOverride?: string | null): PresenceTrackPayload | null => {
+      const p = profileRef.current
+      if (!p) return null
+      return {
+        user_id: p.id,
+        anonymous_name: p.anonymous_name,
+        avatar_color: p.avatar_color,
+        current_room:
+          roomOverride === undefined ? currentRoomRef.current : roomOverride,
+        ghost_mode: !!p.ghost_mode,
+        last_seen: new Date().toISOString(),
+        is_idle,
+      }
+    },
+    []
+  )
+
+  const flushTrack = useCallback(async (payload: PresenceTrackPayload) => {
+    if (!channelRef.current) return
+    const seq = ++trackSeqRef.current
+    try {
+      await channelRef.current.track(payload)
+      // Only honour the "last" track — drop stale resolutions.
+      if (seq === trackSeqRef.current) {
+        lastTrackAtRef.current = Date.now()
+        pendingTrackRef.current = null
+      }
+    } catch (err) {
+      console.error('Presence track error:', err)
+    }
+  }, [])
+
+  const scheduleTrack = useCallback(
+    (is_idle: boolean, roomOverride?: string | null) => {
+      const payload = buildPayload(is_idle, roomOverride)
+      if (!payload) return
+
+      const now = Date.now()
+      const elapsed = now - lastTrackAtRef.current
+
+      if (elapsed >= TRACK_THROTTLE_MS) {
+        // Outside the window — track immediately.
+        void flushTrack(payload)
+      } else {
+        // Inside the window — stash the latest payload and schedule a
+        // single flush at the end of the window. This way a flurry of
+        // mousedown/keydown events still ends with exactly one extra
+        // track instead of zero (which would otherwise leave us out of
+        // date for up to 10s).
+        pendingTrackRef.current = payload
+        if (flushTimerRef.current) return
+        flushTimerRef.current = setTimeout(() => {
+          flushTimerRef.current = null
+          const pending = pendingTrackRef.current
+          if (pending) void flushTrack(pending)
+        }, TRACK_THROTTLE_MS - elapsed)
+      }
+    },
+    [buildPayload, flushTrack]
+  )
+
+  const resetIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    idleTimerRef.current = setTimeout(() => {
+      scheduleTrack(true)
+    }, IDLE_TIMEOUT_MS)
+  }, [scheduleTrack])
 
   useEffect(() => {
     let mounted = true
+    let visibilityHandler: (() => void) | null = null
+    let focusHandler: (() => void) | null = null
 
     async function init() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user || !mounted) return
-        currentUserIdRef.current = user.id
 
         const { data: profile } = await supabase
           .from('profiles')
@@ -48,151 +175,108 @@ export function usePresence() {
         if (!profile || !mounted) return
         profileRef.current = profile
 
-        try {
-          channelRef.current = supabase.channel('online-users', {
-            config: { presence: { key: user.id } }
-          })
+        const channel = supabase.channel('online-users', {
+          config: { presence: { key: user.id } },
+        })
 
-          channelRef.current
-            .on('presence', { event: 'sync' }, () => {
-              try {
-                if (!mounted) return
-                const state = channelRef.current?.presenceState() || {}
-                const users: PresenceUser[] = []
-                for (const key in state) {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const presences = state[key] as any[]
-                  const p = presences?.[0]
-                  if (!p) continue
-                  users.push({
-                    user_id: p.user_id,
-                    anonymous_name: p.anonymous_name,
-                    avatar_color: p.avatar_color,
-                    current_room: p.current_room ?? null,
-                    ghost_mode: p.ghost_mode || false,
-                    last_seen: p.last_seen || new Date().toISOString(),
-                    is_idle: !!p.is_idle,
-                  })
-                }
-                setVisibleUsers(
-                  users.filter((u) => !u.ghost_mode || u.user_id === user.id)
-                )
-              } catch (err) {
-                console.error('Presence sync error:', err)
-              }
-            })
-            .subscribe(async (status: string, err?: Error) => {
-              if (err) {
-                console.error('Presence subscribe error:', err)
-                return
-              }
-              if (status === 'SUBSCRIBED' && !profile.ghost_mode) {
-                try {
-                  await channelRef.current?.track({
-                    user_id: user.id,
-                    anonymous_name: profile.anonymous_name,
-                    avatar_color: profile.avatar_color,
-                    current_room: null,
-                    ghost_mode: profile.ghost_mode || false,
-                    last_seen: new Date().toISOString(),
-                    is_idle: false,
-                  })
-                  resetIdleTimer()
-                } catch (trackErr) {
-                  console.error('Presence track error:', trackErr)
-                }
-              }
-            })
-        } catch (channelErr) {
-          console.error('Failed to create presence channel:', channelErr)
+        channel.on('presence', { event: 'sync' }, () => {
+          if (!mounted) return
+          try {
+            const state = channel.presenceState() || {}
+            const users: PresenceUser[] = []
+            for (const key in state) {
+              const presences = state[key] as PresenceTrackPayload[]
+              const p = presences?.[0]
+              if (!p || !p.user_id) continue
+              users.push({
+                user_id: p.user_id,
+                anonymous_name: p.anonymous_name,
+                avatar_color: p.avatar_color,
+                current_room: p.current_room ?? null,
+                ghost_mode: !!p.ghost_mode,
+                last_seen: p.last_seen || new Date().toISOString(),
+                is_idle: !!p.is_idle,
+              })
+            }
+            setVisibleUsers(
+              users.filter((u) => !u.ghost_mode || u.user_id === user.id)
+            )
+          } catch (err) {
+            console.error('Presence sync error:', err)
+          }
+        })
+
+        channel.subscribe((status: string, err?: Error) => {
+          if (err) {
+            console.error('Presence subscribe error:', err)
+            return
+          }
+          if (status === 'SUBSCRIBED' && !profile.ghost_mode) {
+            // First track is allowed to bypass the throttle — it sets the
+            // baseline `lastTrackAt` value.
+            const payload = buildPayload(false)
+            if (payload) void flushTrack(payload)
+            resetIdleTimer()
+          }
+        })
+
+        channelRef.current = channel
+
+        // Re-broadcast on focus/visibility so we don't appear idle when the
+        // user just alt-tabbed back. These are infrequent so they don't need
+        // to be throttled — but we still defer to the throttler for safety.
+        visibilityHandler = () => {
+          if (document.visibilityState === 'visible') {
+            scheduleTrack(false)
+            resetIdleTimer()
+          }
         }
+        focusHandler = () => {
+          scheduleTrack(false)
+          resetIdleTimer()
+        }
+        document.addEventListener('visibilitychange', visibilityHandler)
+        window.addEventListener('focus', focusHandler)
       } catch (err) {
         console.error('Presence init error:', err)
       }
     }
 
-    function resetIdleTimer() {
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
-      idleTimerRef.current = setTimeout(() => {
-        if (!channelRef.current || !profileRef.current) return
-        channelRef.current.track({
-          user_id: profileRef.current.id,
-          anonymous_name: profileRef.current.anonymous_name,
-          avatar_color: profileRef.current.avatar_color,
-          current_room: currentRoomRef.current,
-          ghost_mode: profileRef.current.ghost_mode || false,
-          last_seen: new Date().toISOString(),
-          is_idle: true,
-        }).catch((err: unknown) => console.error('Idle track error:', err))
-      }, IDLE_TIMEOUT_MS)
-    }
-
-    function handleActivity() {
-      if (!channelRef.current || !profileRef.current) {
-        resetIdleTimer()
-        return
-      }
-      channelRef.current.track({
-        user_id: profileRef.current.id,
-        anonymous_name: profileRef.current.anonymous_name,
-        avatar_color: profileRef.current.avatar_color,
-        current_room: currentRoomRef.current,
-        ghost_mode: profileRef.current.ghost_mode || false,
-        last_seen: new Date().toISOString(),
-        is_idle: false,
-      }).catch((err: unknown) => console.error('Activity track error:', err))
-      resetIdleTimer()
-    }
-
-    init()
-
-    const events = ['mousedown', 'keydown', 'touchstart']
-    events.forEach((event) => window.addEventListener(event, handleActivity))
+    void init()
 
     return () => {
       mounted = false
-      events.forEach((event) => window.removeEventListener(event, handleActivity))
+      if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler)
+      if (focusHandler) window.removeEventListener('focus', focusHandler)
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+      if (flushTimerRef.current) clearTimeout(flushTimerRef.current)
       if (channelRef.current) {
-        try {
-          supabase.removeChannel(channelRef.current)
-        } catch (err) {
+        supabase.removeChannel(channelRef.current).catch((err: unknown) => {
           console.error('Failed to remove presence channel:', err)
-        }
+        })
         channelRef.current = null
       }
       if (typingChannelRef.current) {
-        try {
-          supabase.removeChannel(typingChannelRef.current)
-        } catch (err) {
+        supabase.removeChannel(typingChannelRef.current).catch((err: unknown) => {
           console.error('Failed to remove typing channel:', err)
-        }
+        })
         typingChannelRef.current = null
       }
     }
-  }, [supabase])
+  }, [buildPayload, flushTrack, resetIdleTimer, scheduleTrack])
 
   const updateCurrentRoom = useCallback(
     async (roomId: string | null) => {
       currentRoomRef.current = roomId
       try {
         if (channelRef.current && profileRef.current) {
-          await channelRef.current.track({
-            user_id: profileRef.current.id,
-            anonymous_name: profileRef.current.anonymous_name,
-            avatar_color: profileRef.current.avatar_color,
-            current_room: roomId,
-            ghost_mode: profileRef.current.ghost_mode || false,
-            last_seen: new Date().toISOString(),
-            is_idle: false,
-          })
+          // Room changes are infrequent; bypass the throttle for a prompt
+          // update. Reset the throttle window afterwards.
+          const payload = buildPayload(false, roomId)
+          if (payload) await flushTrack(payload)
         }
         if (typingChannelRef.current) {
-          try {
-            supabase.removeChannel(typingChannelRef.current)
-          } catch (err) {
-            console.error('Failed to remove old typing channel:', err)
-          }
+          await supabase.removeChannel(typingChannelRef.current)
           typingChannelRef.current = null
         }
         setTypingUsers([])
@@ -203,11 +287,10 @@ export function usePresence() {
           typingChannel
             .on('presence', { event: 'sync' }, () => {
               try {
-                const state = typingChannel?.presenceState() || {}
+                const state = typingChannel.presenceState() || {}
                 const typing: string[] = []
                 for (const key in state) {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const presences = state[key] as any[]
+                  const presences = state[key] as TypingTrackPayload[]
                   presences?.forEach((p) => {
                     if (
                       p.typing &&
@@ -234,25 +317,22 @@ export function usePresence() {
         console.error('Failed to update current room:', err)
       }
     },
-    [supabase]
+    [buildPayload, flushTrack]
   )
 
-  const setTyping = useCallback(
-    async (typing: boolean) => {
-      try {
-        if (typingChannelRef.current && profileRef.current) {
-          await typingChannelRef.current.track({
-            user_id: profileRef.current.id,
-            anonymous_name: profileRef.current.anonymous_name,
-            typing,
-          })
-        }
-      } catch (err) {
-        console.error('Failed to set typing:', err)
+  const setTyping = useCallback(async (typing: boolean) => {
+    try {
+      if (typingChannelRef.current && profileRef.current) {
+        await typingChannelRef.current.track({
+          user_id: profileRef.current.id,
+          anonymous_name: profileRef.current.anonymous_name,
+          typing,
+        })
       }
-    },
-    []
-  )
+    } catch (err) {
+      console.error('Failed to set typing:', err)
+    }
+  }, [])
 
   return { visibleUsers, typingUsers, updateCurrentRoom, setTyping }
 }

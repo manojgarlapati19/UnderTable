@@ -458,7 +458,6 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         currentUserId={profile.id}
         isAdmin={isAdmin}
         isConfessionBox={room.is_confession_box}
-        accentColor={accentColor}
         blockedUserIds={blockedUserIds}
         searchQuery={debouncedSearch}
         isSearchOpen={isSearchOpen}

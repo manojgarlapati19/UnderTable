@@ -29,8 +29,6 @@ interface ReactionBarProps {
 }
 
 export default function ReactionBar({
-  messageId,
-  userId,
   userReactedEmojis,
   isOwn,
   canEdit,

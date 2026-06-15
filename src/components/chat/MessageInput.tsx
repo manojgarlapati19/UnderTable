@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Smile, Image, Send, X, BarChart3 } from 'lucide-react'
+import { Smile, Image, Send, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import ReplyPreview from './ReplyPreview'
 
@@ -98,6 +97,11 @@ export default function MessageInput({
   onDismissReply,
   onTypingChange,
 }: MessageInputProps) {
+  // Suppress "declared but never read" — these come from the interface
+  // contract and are used by parent code (e.g. accessibility labels).
+  void roomId
+  void roomName
+
   const [content, setContent] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [slowModeTimer, setSlowModeTimer] = useState(0)
@@ -113,7 +117,6 @@ export default function MessageInput({
     return []
   })
   const [showMentionMenu, setShowMentionMenu] = useState(false)
-  const [mentionQuery, setMentionQuery] = useState('')
   const [mentionUsers, setMentionUsers] = useState<{ user_id: string; anonymous_name: string }[]>([])
   const [mentionIndex, setMentionIndex] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -200,7 +203,6 @@ export default function MessageInput({
     const atMatch = beforeCursor.match(/@(\w*)$/)
     if (atMatch) {
       const query = atMatch[1].toLowerCase()
-      setMentionQuery(query)
       setMentionIndex(0)
 
       // Fetch users from profiles table matching the query

@@ -1,4 +1,27 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+/**
+ * Relationship between two Supabase tables.
+ *
+ * The Supabase JS client requires every entry of
+ * `Database['public']['Tables'][name]` to have a `Relationships` key, even
+ * if the relationship graph is unknown (we just pass `[]`). Without this
+ * key the generated client collapses query results to `never` and
+ * `.insert(...)` / `.update(...)` calls fail to type-check.
+ */
+type DbRelationship = {
+  foreignKeyName: string
+  columns: string[]
+  isOneToOne: boolean
+  referencedRelation: string
+  referencedColumns: string[]
+}
 
 export interface Database {
   public: {
@@ -44,6 +67,7 @@ export interface Database {
           notifications_enabled?: boolean
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       rooms: {
         Row: {
@@ -100,6 +124,7 @@ export interface Database {
           created_by?: string
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       room_members: {
         Row: {
@@ -123,6 +148,7 @@ export interface Database {
           added_by?: string
           added_at?: string
         }
+        Relationships: DbRelationship[]
       }
       messages: {
         Row: {
@@ -167,6 +193,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: DbRelationship[]
       }
       reactions: {
         Row: {
@@ -190,6 +217,7 @@ export interface Database {
           emoji?: string
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       read_receipts: {
         Row: {
@@ -210,6 +238,7 @@ export interface Database {
           user_id?: string
           seen_at?: string
         }
+        Relationships: DbRelationship[]
       }
       invite_links: {
         Row: {
@@ -239,6 +268,7 @@ export interface Database {
           is_active?: boolean
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       polls: {
         Row: {
@@ -271,6 +301,7 @@ export interface Database {
           expires_at?: string | null
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       poll_votes: {
         Row: {
@@ -294,6 +325,7 @@ export interface Database {
           option_id?: string
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       bookmarks: {
         Row: {
@@ -314,6 +346,7 @@ export interface Database {
           message_id?: string
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       blocks: {
         Row: {
@@ -334,6 +367,7 @@ export interface Database {
           blocked_id?: string
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       reports: {
         Row: {
@@ -369,6 +403,7 @@ export interface Database {
           resolved_at?: string | null
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       notification_preferences: {
         Row: {
@@ -392,6 +427,7 @@ export interface Database {
           level?: 'all' | 'mentions' | 'muted'
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       pinned_messages: {
         Row: {
@@ -415,6 +451,7 @@ export interface Database {
           pinned_by?: string
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       keyword_filters: {
         Row: {
@@ -435,6 +472,7 @@ export interface Database {
           created_by?: string
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
       conversation_starters: {
         Row: {
@@ -458,14 +496,21 @@ export interface Database {
           posted_at?: string | null
           created_at?: string
         }
+        Relationships: DbRelationship[]
       }
     }
+    // We don't have any Supabase Views / Functions / Enums in this schema.
+    // `Record<string, never>` collapses the type so that any key lookup
+    // returns `never`, which is the safe default supabase-js expects.
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: Record<string, never>
   }
 }
 
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type Inserts<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
-export type Updates<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+export type Tables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Row']
+export type Inserts<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Insert']
+export type Updates<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Update']

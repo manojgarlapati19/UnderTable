@@ -71,6 +71,11 @@ export default function ReadReceipts({ messageId, maxVisible = 5 }: ReadReceipts
     }
   }, [messageId])
 
+  interface ReadReceiptsRow {
+    user_id: string
+    profiles: { anonymous_name: string; avatar_color: string } | null
+  }
+
   async function loadReaders() {
     try {
       const { data } = await supabase
@@ -81,13 +86,16 @@ export default function ReadReceipts({ messageId, maxVisible = 5 }: ReadReceipts
         `)
         .eq('message_id', messageId)
         .limit(maxVisible + 1)
+        .returns<ReadReceiptsRow[]>()
 
       if (data) {
-        const users = data.map((r: any) => ({
-          user_id: r.user_id,
-          anonymous_name: r.profiles.anonymous_name,
-          avatar_color: r.profiles.avatar_color,
-        }))
+        const users: ReceiptUser[] = data
+          .filter((r): r is ReadReceiptsRow & { profiles: { anonymous_name: string; avatar_color: string } } => r.profiles !== null)
+          .map((r) => ({
+            user_id: r.user_id,
+            anonymous_name: r.profiles.anonymous_name,
+            avatar_color: r.profiles.avatar_color,
+          }))
         setReaders(users)
       }
     } catch (err) {

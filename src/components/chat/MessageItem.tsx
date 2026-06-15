@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils/cn'
 import { getRelativeTime, getFullTimestamp } from '@/lib/utils/time'
-import { getAvatarColor, getAvatarGradient } from '@/lib/utils/avatar-color'
+import { getAvatarGradient } from '@/lib/utils/avatar-color'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import ReactionBar from './ReactionBar'
 import ReactionPill from './ReactionPill'
@@ -80,6 +80,99 @@ function highlightMentions(text: string): (string | React.ReactNode)[] {
   })
 }
 
+// Detect GIF image URLs. Returns true if the content is a single URL pointing
+// to a GIF (tenor share URL, giphy share URL, or direct .gif/.webp link).
+const DIRECT_GIF_RE = /^https?:\/\/\S+\.(gif|webp)(\?\S*)?$/i
+const GIF_HOST_RE =
+  /^(https?:\/\/)?(media1\.)?(media\.tenor\.com|tenor\.com|giphy\.com|media\.giphy\.com|i\.giphy\.com|c\.tenor\.com|media\.tenor\.co)/i
+const TENOR_SHARE_RE = /^https?:\/\/(www\.)?tenor\.com\/view\//i
+
+export function isGifUrl(text: string): boolean {
+  const trimmed = text.trim()
+  if (!trimmed) return false
+  // Tenor share pages embed the actual gif via a meta tag — show a clickable
+  // link to the share page rather than rendering a broken image.
+  if (TENOR_SHARE_RE.test(trimmed)) return true
+  if (DIRECT_GIF_RE.test(trimmed)) return true
+  if (GIF_HOST_RE.test(trimmed) && /\.(gif|webp)(\?|$)/i.test(trimmed)) return true
+  return false
+}
+
+export function getGifSrc(text: string): string {
+  return text.trim()
+}
+
+function GifImage({ url, alt = 'GIF' }: { url: string; alt?: string }) {
+  const [loaded, setLoaded] = useState(false)
+  const [errored, setErrored] = useState(false)
+
+  if (errored) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="break-all text-[#A78BFA] underline hover:text-[#C4B5FD]"
+      >
+        {url}
+      </a>
+    )
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block max-w-[320px] sm:max-w-[400px] overflow-hidden rounded-[12px] border border-[rgba(255,255,255,0.12)] bg-[rgba(0,0,0,0.2)]"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={alt}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        onError={() => setErrored(true)}
+        className={cn(
+          'block w-full h-auto max-h-[400px] object-contain transition-opacity duration-200',
+          loaded ? 'opacity-100' : 'opacity-0'
+        )}
+        style={{ display: loaded ? 'block' : 'none' }}
+      />
+      {!loaded && (
+        <div className="flex items-center justify-center h-40 text-xs text-[rgba(255,255,255,0.45)]">
+          Loading GIF…
+        </div>
+      )}
+    </a>
+  )
+}
+
+function renderMessageBody(
+  content: string,
+  searchQuery: string | undefined,
+  isEdited: boolean
+) {
+  if (isGifUrl(content)) {
+    return (
+      <div className="space-y-1">
+        <GifImage url={getGifSrc(content)} alt="Shared GIF" />
+        {isEdited && (
+          <span className="block text-[10px] text-[rgba(255,255,255,0.5)]">(edited)</span>
+        )}
+      </div>
+    )
+  }
+  return (
+    <p style={{ fontSize: '14px' }}>
+      {highlightSearchText(content, searchQuery)}
+      {isEdited && (
+        <span className="text-[10px] text-[rgba(255,255,255,0.5)] ml-1">(edited)</span>
+      )}
+    </p>
+  )
+}
+
 export default function MessageItem({
   message,
   isOwn,
@@ -111,8 +204,6 @@ export default function MessageItem({
   const avatarGradient = message.profile?.anonymous_name
     ? getAvatarGradient(message.profile.anonymous_name)
     : 'linear-gradient(135deg, #7C3AED, #9333EA)'
-  const avatarColor = message.profile?.avatar_color || getAvatarColor(senderName)
-
   useEffect(() => {
     const interval = setInterval(() => {
       setTimeAgo(getRelativeTime(message.created_at))
@@ -232,6 +323,8 @@ export default function MessageItem({
     )
   }
 
+  const isGif = isGifUrl(message.content)
+
   return (
     <div
       ref={messageRef}
@@ -253,7 +346,12 @@ export default function MessageItem({
             <span className="font-medium">
               {message.reply_message.profile?.anonymous_name || 'Unknown'}
             </span>
-            : {message.reply_message.content}
+            :{' '}
+            {isGifUrl(message.reply_message.content) ? (
+              <span className="italic">GIF</span>
+            ) : (
+              message.reply_message.content
+            )}
           </button>
         </div>
       )}
@@ -327,32 +425,29 @@ export default function MessageItem({
             <div
               style={{
                 borderRadius: '16px',
-                padding: '10px 14px',
+                padding: isGif ? '4px' : '10px 14px',
                 lineHeight: 1.5,
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
                 animation: 'slide-up 0.2s ease-out',
                 ...(isOwn
                   ? {
-                      background: 'linear-gradient(135deg, #7C3AED, #9333EA)',
+                      background: isGif
+                        ? 'transparent'
+                        : 'linear-gradient(135deg, #7C3AED, #9333EA)',
                       color: 'white',
                       borderTopRightRadius: '4px',
-                      boxShadow: '0 3px 12px rgba(124,58,237,0.3)',
+                      boxShadow: isGif ? 'none' : '0 3px 12px rgba(124,58,237,0.3)',
                     }
                   : {
-                      background: 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.07)',
+                      background: isGif ? 'transparent' : 'rgba(255,255,255,0.07)',
+                      border: isGif ? 'none' : '1px solid rgba(255,255,255,0.07)',
                       color: '#EDEBF7',
                       borderTopLeftRadius: '4px',
                     }),
               }}
             >
-              <p style={{ fontSize: '14px' }}>
-                {highlightSearchText(message.content, searchQuery)}
-                {message.is_edited && (
-                  <span className="text-[10px] text-[rgba(255,255,255,0.5)] ml-1">(edited)</span>
-                )}
-              </p>
+              {renderMessageBody(message.content, searchQuery, message.is_edited)}
             </div>
           )}
 

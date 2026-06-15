@@ -5,12 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import StatsCards from '@/components/admin/StatsCards'
 import Link from 'next/link'
-import {
-  Link2,
-  Plus,
-  Shield,
-  Users,
-} from 'lucide-react'
+import { Link2, Plus, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -26,7 +21,9 @@ export default function AdminDashboardPage() {
     roomsCount: 0,
   })
 
-  const [recentActions, setRecentActions] = useState<any[]>([])
+  // Reserved for the upcoming activity feed component.
+  const [, setRecentActions] = useState<Record<string, unknown>[]>([])
+  void setRecentActions
 
   useEffect(() => {
     loadStats()
@@ -68,7 +65,7 @@ export default function AdminDashboardPage() {
     const { error } = await supabase.from('invite_links').insert({
       code,
       created_by: user.id,
-    })
+    } as never)
 
     if (!error) {
       const url = `${window.location.origin}/invite/${code}`

@@ -26,12 +26,21 @@ interface ReportWithMessage {
   }
 }
 
+interface FlaggedMessage {
+  id: string
+  content: string
+  user_id: string
+  room_id: string
+  is_flagged: boolean
+  rooms: { name: string; icon_emoji: string }
+  profiles: { anonymous_name: string }
+}
+
 export default function AdminReportsPage() {
   const supabase = createClient()
   const [reports, setReports] = useState<ReportWithMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('pending')
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadReports()
@@ -54,7 +63,7 @@ export default function AdminReportsPage() {
         .order('created_at', { ascending: false })
 
       if (flaggedMessages) {
-        const synthetic: ReportWithMessage[] = flaggedMessages.map((m: any) => ({
+        const synthetic: ReportWithMessage[] = flaggedMessages.map((m: FlaggedMessage) => ({
           id: `flagged-${m.id}`,
           message_id: m.id,
           reported_by: '',

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Search, Plus, X, Loader2, AlertTriangle } from 'lucide-react'
-import { checkKeywordFilter, getHighlightedKeywords } from '@/lib/utils/keyword-filter'
+import { getHighlightedKeywords } from '@/lib/utils/keyword-filter'
 import { toast } from 'sonner'
 import type { Tables } from '@/lib/supabase/database.types'
 
@@ -42,7 +42,7 @@ export default function AdminFiltersPage() {
     const { error } = await supabase.from('keyword_filters').insert({
       word: newWord.trim().toLowerCase(),
       created_by: user.id,
-    })
+    } as never)
 
     if (!error) {
       toast.success(`Added "${newWord}" to filter list`)

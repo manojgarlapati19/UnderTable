@@ -9,16 +9,15 @@ import MessageItem from './MessageItem'
 import PollCard from './PollCard'
 import TypingIndicator from './TypingIndicator'
 import type { Tables } from '@/lib/supabase/database.types'
-import type { SimpleMessage } from '@/hooks/useMessages'
+import type { Message } from '@/hooks/useMessages'
 
 interface MessageListProps {
   roomId: string
-  messages: SimpleMessage[]
+  messages: Message[]
   loading: boolean
   currentUserId: string
   isAdmin: boolean
   isConfessionBox: boolean
-  accentColor: string
   blockedUserIds: string[]
   searchQuery?: string
   isSearchOpen?: boolean
@@ -39,7 +38,6 @@ export default function MessageList({
   currentUserId,
   isAdmin,
   isConfessionBox,
-  accentColor,
   blockedUserIds,
   searchQuery = '',
   isSearchOpen = false,
