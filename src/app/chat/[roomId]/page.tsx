@@ -146,7 +146,7 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
         .eq('id', params.roomId)
         .single()
 
-      if (data) setRoom(data)
+      if (data) setRoom(data as unknown as Tables<'rooms'>)
     } catch (err) {
       console.error('Failed to load room:', err)
     }

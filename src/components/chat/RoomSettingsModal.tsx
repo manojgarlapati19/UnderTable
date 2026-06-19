@@ -17,7 +17,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Save, X, Shield } from 'lucide-react'
-import type { Tables } from '@/lib/supabase/database.types'
+import type { Tables, Updates } from '@/lib/supabase/database.types'
 
 interface RoomSettingsModalProps {
   open: boolean
@@ -61,7 +61,7 @@ export default function RoomSettingsModal({
     if (!isAdmin) return
     setSaving(true)
 
-    const updates: Tables<'rooms'>['Update'] = {}
+    const updates: Updates<'rooms'> = {}
     if (name !== room.name) updates.name = name
     if (description !== (room.description || '')) updates.description = description
     // Save TTL in seconds directly (no hours conversion)
@@ -70,7 +70,7 @@ export default function RoomSettingsModal({
     if (savedTtlSeconds !== currentTtlSeconds) {
       updates.message_ttl_seconds = savedTtlSeconds
     }
-    if (slowModeSeconds !== (room.slow_mode_seconds || 0)) updates.slow_mode_seconds = slowModeSeconds || null
+    if (slowModeSeconds !== (room.slow_mode_seconds || 0)) updates.slow_mode_seconds = slowModeSeconds || 0
 
     if (Object.keys(updates).length === 0) {
       setSaving(false)

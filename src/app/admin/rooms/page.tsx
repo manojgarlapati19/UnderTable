@@ -60,7 +60,13 @@ export default function AdminRoomsPage() {
       return
     }
 
-    if (data) setRooms(data)
+    if (data) {
+      // The query selects a subset of `rooms` columns; with `Schema = any`
+      // (see src/lib/supabase/client.ts) the result is typed as the selected
+      // shape rather than the full `Row`. Cast through `unknown` to align it
+      // with `Tables<'rooms'>`.
+      setRooms(data as unknown as Tables<'rooms'>[])
+    }
     setLoading(false)
   }
 

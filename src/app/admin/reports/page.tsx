@@ -63,7 +63,13 @@ export default function AdminReportsPage() {
         .order('created_at', { ascending: false })
 
       if (flaggedMessages) {
-        const synthetic: ReportWithMessage[] = flaggedMessages.map((m: FlaggedMessage) => ({
+        // Supabase types FK joins as arrays even with `!inner`; at runtime
+        // the relationship is one-to-one, so the row matches the
+        // `FlaggedMessage` shape (single objects). Cast through `unknown`
+        // to align the query result with the interface.
+        const synthetic: ReportWithMessage[] = (
+          flaggedMessages as unknown as FlaggedMessage[]
+        ).map((m) => ({
           id: `flagged-${m.id}`,
           message_id: m.id,
           reported_by: '',

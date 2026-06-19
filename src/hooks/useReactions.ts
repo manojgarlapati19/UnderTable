@@ -76,7 +76,12 @@ export function useReactions(messageId: string, currentUserId: string) {
         })
       }
     },
-    [messageId, currentUserId, reactions, supabase]
+    // `reactions` is intentionally NOT a dependency: the callback always
+    // reads the latest value via `reactionsRef.current` (kept in sync
+    // above). Including `reactions` here would re-create the callback on
+    // every state change, defeating the point of `useCallback` and
+    // triggering a `react-hooks/exhaustive-deps` warning.
+    [messageId, currentUserId, supabase]
   )
 
   const setReactionsFromServer = useCallback(
