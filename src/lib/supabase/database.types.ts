@@ -499,12 +499,22 @@ export interface Database {
         Relationships: DbRelationship[]
       }
     }
-    // We don't have any Supabase Views / Functions / Enums in this schema.
-    // `Record<string, never>` collapses the type so that any key lookup
-    // returns `never`, which is the safe default supabase-js expects.
-    Views: Record<string, never>
-    Functions: Record<string, never>
-    Enums: Record<string, never>
+    // No Supabase Views / Functions / Enums exist in this schema.
+    // IMPORTANT: use `{ [_ in never]: never }` (the supabase-CLI generated
+    // shape), NOT `Record<string, never>` and NOT `{}`.
+    //  * `Record<string, never>`: supabase-js's QueryBuilder types tables as
+    //    `Tables & Views`; intersecting a real table object with
+    //    `Record<string, never>` collapses every key to `never` and breaks
+    //    `.insert` / `.eq` / `.single`.
+    //  * `{}`: TypeScript's `no-empty-object-type` rule rejects it because
+    //    `{}` is `NonNullable<unknown>` (allows `0`, `""`, etc.), not a
+    //    truly empty object.
+    // `{ [_ in never]: never }` is a mapped type with no keys — the same
+    // shape the Supabase CLI emits — and is accepted by both the linter
+    // and supabase-js.
+    Views: { [_ in never]: never }
+    Functions: { [_ in never]: never }
+    Enums: { [_ in never]: never }
   }
 }
 

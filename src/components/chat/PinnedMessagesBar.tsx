@@ -36,7 +36,7 @@ export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessage
         .order('created_at', { ascending: false })
         .limit(3)
 
-      if (data) setPinnedMessages(data as PinnedMessage[])
+      if (data) setPinnedMessages(data as unknown as PinnedMessage[])
     } catch (err) {
       console.error('Failed to load pinned messages:', err)
     }

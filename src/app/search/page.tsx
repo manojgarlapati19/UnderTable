@@ -51,7 +51,7 @@ export default function SearchPage() {
           .order('created_at', { ascending: false })
           .limit(50)
 
-        if (data) setResults(data as SearchResult[])
+        if (data) setResults(data as unknown as SearchResult[])
       } catch (error) {
         console.error('Search failed:', error)
       } finally {

@@ -41,7 +41,6 @@ interface LeftSidebarProps {
 
 interface RoomWithUnread extends Tables<'rooms'> {
   unread_count?: number
-  has_password?: boolean | null
 }
 
 export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSidebarProps) {
@@ -94,7 +93,7 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
         console.error('Failed to load rooms:', error)
         return
       }
-      if (data) setRooms(data as RoomWithUnread[])
+      if (data) setRooms(data as unknown as RoomWithUnread[])
     } catch (err) {
       console.error('Failed to load rooms:', err)
     }
