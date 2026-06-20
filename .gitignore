@@ -38,3 +38,7 @@ next-env.d.ts
 # local build logs
 /build.log
 *.log
+
+# editor / IDE scratch (Continue VSCode extension, Windows nul reserved-name artifacts)
+/.continue/
+/nul

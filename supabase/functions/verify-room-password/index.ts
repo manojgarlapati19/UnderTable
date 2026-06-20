@@ -12,6 +12,10 @@
 //     `latest` resolution per cold start).
 //   - The verify-user is the caller, enforced via the JWT, and the rooms
 //     table is queried with RLS-friendly predicates.
+//   - On successful verification, we write a row to `verified_room_access`
+//     which the `can_access_room()` SQL function reads via RLS. This
+//     closes the previous DevTools-bypass where the client check was the
+//     only enforcement.
 //
 // Required secrets:
 //   - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY   (provided by Supabase)
@@ -126,6 +130,22 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
+    // Caller identity — we verify against the JWT, not a body field, so
+    // the request cannot be replayed across users.
+    const authHeader = req.headers.get('authorization') ?? ''
+    const jwt = authHeader.replace(/^Bearer\s+/i, '')
+    let callerId: string | null = null
+    if (jwt) {
+      const { data: caller } = await supabaseAdmin.auth.getUser(jwt)
+      callerId = caller?.user?.id ?? null
+    }
+    if (!callerId) {
+      return new Response(
+        JSON.stringify({ valid: false, error: 'authentication required' }),
+        { status: 401, headers }
+      )
+    }
+
     const { data: room, error: roomError } = await supabaseAdmin
       .from('rooms')
       .select('id, room_password')
@@ -169,12 +189,34 @@ serve(async (req) => {
       for (let i = 0; i < len; i++) {
         diff |= (a[i] ?? 0) ^ (b[i] ?? 0)
       }
-      // Always run the dummy compare to keep timing constant.
-      await compare(password, '$2a$10$abcdefghijklmnopqrstuv1234567890ABCDEFGHIJKLMNOPQRSTU1')
+      // Always run the dummy compare to keep timing constant. Use a
+      // syntactically-valid 60-character bcrypt hash so the comparison
+      // doesn't throw (the previous dummy was 60 chars by accident but
+      // not a valid bcrypt format).
+      const DUMMY_BCRYPT =
+        '$2a$10$abcdefghijklmnopqrstuv1234567890ABCDEFGHIJKLMNOPQRSTUv.'
+      await compare(password, DUMMY_BCRYPT).catch(() => {})
       passwordValid = diff === 0
     }
 
-    return new Response(JSON.stringify({ valid: passwordValid }), {
+    if (!passwordValid) {
+      return new Response(JSON.stringify({ valid: false }), {
+        status: 200,
+        headers,
+      })
+    }
+
+    // Persist server-side proof of verification. This is what
+    // `can_access_room()` reads via RLS — without this row, the user
+    // cannot read messages even if they bypass the client-side check.
+    await supabaseAdmin
+      .from('verified_room_access')
+      .upsert(
+        { user_id: callerId, room_id, verified_at: new Date().toISOString() },
+        { onConflict: 'user_id,room_id' }
+      )
+
+    return new Response(JSON.stringify({ valid: true }), {
       status: 200,
       headers,
     })

@@ -22,11 +22,14 @@ export async function middleware(request: NextRequest) {
   }
 
   // User is authenticated - check profile status
+  // FIX: use maybeSingle() instead of single() — a user who just signed up
+  // but whose profile row hasn't been written yet would otherwise throw a
+  // 406 from `.single()`, crashing the entire middleware response.
   const { data: profile } = await supabase
     .from('profiles')
     .select('status, role')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   // Redirect pending users to pending page
   if (profile?.status === 'pending' && pathname !== '/pending') {

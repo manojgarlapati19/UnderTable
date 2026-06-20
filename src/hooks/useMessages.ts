@@ -70,6 +70,12 @@ export function useMessages({
   const profileCacheRef = useRef<Map<string, DBProfile>>(new Map())
   const replyCacheRef = useRef<Map<string, ReplyPreview>>(new Map())
 
+  // Mirror of `messages` so the realtime effect (which intentionally does not
+  // re-subscribe on every message change) can read the current reaction state
+  // when reconciling UPDATE events instead of a stale first-render snapshot.
+  const messagesRef = useRef<Message[]>([])
+  messagesRef.current = messages
+
   const upsertMessage = useCallback((m: Message) => {
     setMessages((prev) => {
       const idx = prev.findIndex((x) => x.id === m.id)
@@ -98,6 +104,9 @@ export function useMessages({
         .select('*')
         .eq('room_id', roomId)
         .eq('is_deleted', false)
+        // Drop messages whose TTL has elapsed but the cleanup job hasn't
+        // removed them yet. `expires_at` is nullable for non-expiring messages.
+        .or('expires_at.is.null,expires_at.gt.now()')
         .order('created_at', { ascending: true })
         .limit(limit)
 
@@ -266,10 +275,14 @@ export function useMessages({
         sender_name: profile?.anonymous_name ?? UNKNOWN_NAME,
         sender_color: profile?.avatar_color ?? FALLBACK_COLOR,
         reply_preview: replyPreview,
+        // FIX: read from `messagesRef.current` (kept in sync above) instead of
+        // the closed-over `messages` state. The realtime effect intentionally
+        // runs once per roomId so its closure captures the initial empty
+        // array — using `messages` here caused UPDATE events to ALWAYS reset
+        // reactions to [], effectively wiping reactions on every message
+        // edit. Using the ref always reads the latest snapshot.
         reactions:
-          // Preserve existing reactions for UPDATE; for INSERT we don't fetch
-          // them in the realtime event to avoid extra round-trips.
-          (messages.find((m) => m.id === row.id)?.reactions) ?? [],
+          (messagesRef.current.find((m) => m.id === row.id)?.reactions) ?? [],
       })
     }
 

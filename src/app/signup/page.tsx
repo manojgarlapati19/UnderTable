@@ -15,7 +15,9 @@ function SignupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const inviteCode = searchParams.get('code')
-  const supabase = createClient()
+  // FIX: hoist into a ref so we don't recreate the Supabase client (and its
+  // realtime listeners / cookie subscriptions) on every render.
+  const supabase = useRef(createClient()).current
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -38,14 +40,23 @@ function SignupPage() {
   }, [inviteCode])
 
   async function validateInvite() {
-    const { data } = await supabase
-      .from('invite_links')
-      .select('is_active, max_uses, uses_count')
-      .eq('code', inviteCode)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('invite_links')
+        .select('is_active, max_uses, uses_count')
+        .eq('code', inviteCode)
+        .maybeSingle()
 
-    if (!data || !data.is_active || (data.max_uses && data.uses_count >= data.max_uses)) {
-      setError('This invite link is invalid or has expired.')
+      if (error) {
+        setError('Could not validate invite link. Try again.')
+        return
+      }
+      if (!data || !data.is_active || (data.max_uses && data.uses_count >= data.max_uses)) {
+        setError('This invite link is invalid or has expired.')
+      }
+    } catch (err) {
+      console.error('validateInvite error:', err)
+      setError('Could not validate invite link. Try again.')
     }
   }
 
@@ -90,6 +101,21 @@ function SignupPage() {
     setError('')
 
     try {
+      // FIX: re-validate the invite before creating the user. The previous
+      // flow only validated on mount, so a user could submit against an
+      // exhausted invite that the admin had just incremented past the cap.
+      // We do a fresh server-side claim attempt via the edge function — if
+      // it fails, we abort with no account created.
+      const { data: preClaim, error: preClaimErr } = await supabase.functions.invoke(
+        'invite-signup',
+        { body: { code: inviteCode } }
+      )
+      if (preClaimErr || !preClaim?.valid) {
+        throw new Error(
+          preClaim?.error || 'This invite link is no longer valid.'
+        )
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -111,17 +137,6 @@ function SignupPage() {
       })
 
       if (profileError) throw profileError
-
-      // Atomically claim the invite code via edge function (bypasses RLS)
-      const { data: claimResult, error: claimError } = await supabase.functions.invoke(
-        'invite-signup',
-        { body: { code: inviteCode } }
-      )
-
-      if (claimError || !claimResult?.valid) {
-        // Non-critical: the account was created but invite counter may not have incremented
-        console.warn('Failed to claim invite link:', claimError || claimResult?.error)
-      }
 
       toast.success('Account created! Wait for admin approval.')
       router.push('/pending')

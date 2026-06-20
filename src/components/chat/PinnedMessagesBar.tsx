@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Pin } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -20,7 +20,9 @@ type PinnedMessage = {
 export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessagesBarProps) {
   const [pinnedMessages, setPinnedMessages] = useState<PinnedMessage[]>([])
   const [isOpen, setIsOpen] = useState(false)
-  const supabase = createClient()
+  // FIX: hoist into a ref so we don't recreate the Supabase client (and
+  // its realtime listeners / cookie subscriptions) on every render.
+  const supabase = useRef(createClient()).current
 
   const loadPinnedMessages = useCallback(async () => {
     try {

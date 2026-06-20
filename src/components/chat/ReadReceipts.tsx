@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getAvatarGradient } from '@/lib/utils/avatar-color'
@@ -25,7 +25,9 @@ interface ReceiptUser {
 
 export default function ReadReceipts({ messageId, maxVisible = 5 }: ReadReceiptsProps) {
   const [readers, setReaders] = useState<ReceiptUser[]>([])
-  const supabase = createClient()
+  // FIX: hoist into a ref so we don't recreate the Supabase client (and
+  // its realtime listeners / cookie subscriptions) on every render.
+  const supabase = useRef(createClient()).current
 
   useEffect(() => {
     loadReaders()
