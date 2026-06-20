@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,7 +25,9 @@ import { toast } from 'sonner'
 import type { Tables } from '@/lib/supabase/database.types'
 
 export default function AdminRoomsPage() {
-  const supabase = createClient()
+  // FIX: previously created once per render — hoist into a ref so a single
+  // Supabase client is reused across re-renders.
+  const supabase = useRef(createClient()).current
   const [rooms, setRooms] = useState<Tables<'rooms'>[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -71,56 +73,95 @@ export default function AdminRoomsPage() {
     setLoading(false)
   }
 
-  async function createRoom() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  // Set BOTH message_ttl_hours (legacy schema) and message_ttl_seconds (the
+    // column that the chat page actually reads to populate message.expires_at).
+    // The previous version only set hours, so messages never expired even when
+    // the admin thought they had configured TTL.
+    function ttlHoursToSeconds(hours: string): number | null {
+      const n = parseInt(hours)
+      return Number.isFinite(n) && n > 0 ? n * 3600 : null
+    }
 
-    const { error } = await supabase.from('rooms').insert({
-      name: form.name,
-      description: form.description,
-      icon_emoji: form.icon_emoji || '#',
-      accent_color: form.accent_color,
-      is_private: form.is_private,
-      is_confession_box: form.is_confession_box,
-      message_ttl_hours: form.message_ttl_hours ? parseInt(form.message_ttl_hours) : null,
-      slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
-      room_password: form.room_password || null,
-      created_by: user.id,
-    })
+    async function createRoom() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error('You must be signed in to create a room.')
+        return
+      }
 
-    if (!error) {
+      const ttlSeconds = ttlHoursToSeconds(form.message_ttl_hours)
+
+      // FIX: every error path now surfaces to the user via toast AND console.
+      // Previously `if (!error)` was the only branch — RLS rejections, FK
+      // violations, or any other failure left the user staring at a modal
+      // with no feedback, making "I can't create a room" impossible to debug.
+      const { error } = await supabase.from('rooms').insert({
+        name: form.name,
+        description: form.description,
+        icon_emoji: form.icon_emoji || '#',
+        accent_color: form.accent_color,
+        is_private: form.is_private,
+        is_confession_box: form.is_confession_box,
+        message_ttl_hours: ttlSeconds ? Math.round(ttlSeconds / 3600) : null,
+        message_ttl_seconds: ttlSeconds,
+        slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
+        room_password: form.room_password || null,
+        created_by: user.id,
+      })
+
+      if (error) {
+        console.error('Failed to create room:', error)
+        // Most common cause: profile.status is not 'approved' (RLS
+        // is_admin() requires both role='admin' AND status='approved').
+        toast.error(
+          `Failed to create room: ${error.message}` +
+            (error.code === '42501'
+              ? ' (Your account must be an approved admin.)'
+              : '')
+        )
+        return
+      }
+
       toast.success('Room created!')
       setShowCreate(false)
       resetForm()
       await loadRooms()
     }
-  }
 
   async function updateRoom() {
-    if (!editingRoom) return
+      if (!editingRoom) return
 
-    const { error } = await supabase
-      .from('rooms')
-      .update({
-        name: form.name,
-        description: form.description,
-        icon_emoji: form.icon_emoji,
-        accent_color: form.accent_color,
-        is_private: form.is_private,
-        is_confession_box: form.is_confession_box,
-        message_ttl_hours: form.message_ttl_hours ? parseInt(form.message_ttl_hours) : null,
-        slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
-        room_password: form.room_password || null,
-      })
-      .eq('id', editingRoom.id)
+      const ttlSeconds = ttlHoursToSeconds(form.message_ttl_hours)
 
-    if (!error) {
+      // FIX: surface errors. Same pattern as createRoom — without this, a
+      // silently-rejected UPDATE looks identical to a successful one in the UI.
+      const { error } = await supabase
+        .from('rooms')
+        .update({
+          name: form.name,
+          description: form.description,
+          icon_emoji: form.icon_emoji,
+          accent_color: form.accent_color,
+          is_private: form.is_private,
+          is_confession_box: form.is_confession_box,
+          message_ttl_hours: ttlSeconds ? Math.round(ttlSeconds / 3600) : null,
+          message_ttl_seconds: ttlSeconds,
+          slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
+          room_password: form.room_password || null,
+        })
+        .eq('id', editingRoom.id)
+
+      if (error) {
+        console.error('Failed to update room:', error)
+        toast.error(`Failed to update room: ${error.message}`)
+        return
+      }
+
       toast.success('Room updated!')
       setEditingRoom(null)
       resetForm()
       await loadRooms()
     }
-  }
 
   async function deleteRoom(roomId: string) {
     const { error } = await supabase
