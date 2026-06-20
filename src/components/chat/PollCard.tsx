@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,7 +22,6 @@ interface PollOption {
 }
 
 export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps) {
-  const supabase = createClient()
   const { theme } = useTheme()
   const [options, setOptions] = useState<PollOption[]>(() => {
     try {
@@ -33,6 +32,9 @@ export default function PollCard({ poll, isAdmin, currentUserId }: PollCardProps
   const [totalVotes, setTotalVotes] = useState(0)
   const isClosed = poll.is_closed || (poll.expires_at ? new Date(poll.expires_at) < new Date() : false)
   const isDark = theme === 'dark'
+  // FIX: previously created per render — now stable for the lifetime of the
+  // component.
+  const supabase = useRef(createClient()).current
 
   useEffect(() => {
     loadVotes()

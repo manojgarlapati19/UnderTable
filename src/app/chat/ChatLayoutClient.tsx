@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import IconRail from '@/components/layout/IconRail'
@@ -18,7 +18,9 @@ export default function ChatLayoutClient({
   children: React.ReactNode
 }) {
   const router = useRouter()
-  const supabase = createClient()
+    // FIX: previously created once per render — hoist into a ref so a single
+    // Supabase client is reused across re-renders.
+    const supabase = useRef(createClient()).current
   const currentRoomId = useCurrentRoomId()
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -56,30 +58,35 @@ export default function ChatLayoutClient({
   }, [])
 
   async function checkAuth() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        // FIX: use maybeSingle() instead of single() — if the user just
+        // signed up but the profile row hasn't been written yet (or signup
+        // partially failed), `.single()` throws a 406 and the catch block
+        // ends up in an inconsistent state. `.maybeSingle()` returns null
+        // instead, which we treat as "needs to land on the pending page".
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('status')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (!profile || profile.status !== 'approved') {
+          router.push('/pending')
+          return
+        }
+
+        setLoading(false)
+      } catch (err) {
+        console.error('Auth check error:', err)
+        setLoading(false)
       }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('status')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.status !== 'approved') {
-        router.push('/pending')
-        return
-      }
-
-      setLoading(false)
-    } catch (err) {
-      console.error('Auth check error:', err)
-      setLoading(false)
     }
-  }
 
   if (loading) {
     return (

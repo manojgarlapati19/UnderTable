@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { cn } from '@/lib/utils/cn'
 import { getRelativeTime, getFullTimestamp } from '@/lib/utils/time'
 import { getAvatarGradient } from '@/lib/utils/avatar-color'
@@ -24,16 +24,35 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import type { Tables } from '@/lib/supabase/database.types'
+// `Tables` was previously imported for the message-shape interface but we
+// now type the message prop explicitly (see interface below). The type
+// alias is intentionally avoided to keep the contract narrow and to make
+// cross-component shape mismatches visible at the boundary.
 
 interface MessageItemProps {
-  message: Tables<'messages'> & {
-    profile?: { anonymous_name: string; avatar_color: string } | null
-    reactions?: Array<{ id: string; emoji: string; user_id: string }>
-    reply_message?: {
+  // The Message shape produced by useMessages.ts (flat fields), not a
+  // Supabase join. The previous version expected `message.profile?.anonymous_name`
+  // and `message.reply_message.content` — fields that don't exist on the
+  // shape returned by `useMessages`, so every message rendered as
+  // "Unknown" sender with no reply context. See useMessages.ts for the
+  // canonical shape.
+  message: {
+    id: string
+    content: string
+    user_id: string
+    created_at: string
+    is_edited: boolean
+    is_deleted: boolean
+    sender_name: string
+    sender_color: string
+    reply_to: string | null
+    reply_preview: {
+      id: string
       content: string
-      profile?: { anonymous_name: string } | null
+      sender_name: string
+      sender_color: string
     } | null
+    reactions: Array<{ id: string; emoji: string; user_id: string }>
   }
   isOwn: boolean
   isGroupStart: boolean
@@ -200,9 +219,12 @@ export default function MessageItem({
   const [timeAgo, setTimeAgo] = useState(() => getRelativeTime(message.created_at))
   const isDeleted = message.is_deleted
 
-  const senderName = message.profile?.anonymous_name || 'Unknown'
-  const avatarGradient = message.profile?.anonymous_name
-    ? getAvatarGradient(message.profile.anonymous_name)
+  // FIX: read flat sender_name/sender_color from the Message shape produced by
+  // useMessages. The previous code read `message.profile?.anonymous_name`
+  // which was always undefined, making every message render as "Unknown".
+  const senderName = message.sender_name || 'Unknown'
+  const avatarGradient = senderName
+    ? getAvatarGradient(senderName)
     : 'linear-gradient(135deg, #7C3AED, #9333EA)'
   useEffect(() => {
     const interval = setInterval(() => {
@@ -243,7 +265,30 @@ export default function MessageItem({
     setIsEditing(false)
   }
 
-  const supabase = createClient()
+  // FIX: previously `createClient()` was called in the render body, which
+  // created a fresh Supabase client (and its internal listeners) on every
+  // re-render. Hoist it into a ref so a single client is reused for the
+  // lifetime of the component.
+  const supabase = useRef(createClient()).current
+
+  // FIX: `userReactedEmojis` was a fresh Set on every render, which made
+  // `useCallback([...userReactedEmojis, ...])` recreate the callback on every
+  // render — defeating memoisation and (more subtly) capturing a stale Set
+  // when two rapid clicks fired in the same tick. Memoise the Set on the
+  // underlying reactions array so the reference is stable until reactions
+  // actually change, and snapshot it into a ref so the click handler always
+  // reads the latest value without depending on the Set directly.
+  const userReactedEmojis = useMemo(
+    () =>
+      new Set(
+        message.reactions
+          ?.filter((r) => r.user_id === currentUserId)
+          .map((r) => r.emoji) || []
+      ),
+    [message.reactions, currentUserId]
+  )
+  const userReactedEmojisRef = useRef(userReactedEmojis)
+  userReactedEmojisRef.current = userReactedEmojis
 
   const reactionGroups = message.reactions?.reduce<
     Record<string, { count: number; hasReacted: boolean; names: string[] }>
@@ -256,13 +301,11 @@ export default function MessageItem({
     return acc
   }, {}) || {}
 
-  const userReactedEmojis = new Set(
-    message.reactions?.filter((r) => r.user_id === currentUserId).map((r) => r.emoji) || []
-  )
-
   const handleReactionToggle = useCallback(
     async (emoji: string) => {
-      const hasReacted = userReactedEmojis.has(emoji)
+      // Always read the latest Set via ref to avoid stale-closure toggles on
+      // rapid clicks. See the comment above for the rationale.
+      const hasReacted = userReactedEmojisRef.current.has(emoji)
       try {
         if (hasReacted) {
           await supabase
@@ -277,13 +320,19 @@ export default function MessageItem({
             user_id: currentUserId,
             emoji,
           })
-          if (error && error.code !== '23505') throw error
+          // 23505 = unique violation (already reacted); 23514 = check
+          // constraint (emoji not in the allowed 5). Silently no-op for
+          // both — the optimistic UI is the source of truth and the
+          // realtime subscription will reconcile.
+          if (error && error.code !== '23505' && error.code !== '23514') {
+            throw error
+          }
         }
       } catch {
         toast.error('Failed to update reaction')
       }
     },
-    [message.id, currentUserId, userReactedEmojis, supabase]
+    [message.id, currentUserId, supabase]
   )
 
   const canEdit =
@@ -335,8 +384,11 @@ export default function MessageItem({
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      {/* Reply context */}
-      {message.reply_message && (
+      {/* Reply context — read from the flat reply_preview shape produced by
+          useMessages. The previous version read `message.reply_message.content`
+          and `message.reply_message.profile?.anonymous_name`, both of which
+          were always undefined, so the reply preview never rendered. */}
+      {message.reply_preview && (
         <div className={cn('flex items-center gap-2 mb-1', isOwn ? 'justify-end mr-10' : 'ml-10')}>
           <div className="w-1 h-4 rounded-full shrink-0 bg-[#A78BFA]" />
           <button
@@ -344,13 +396,13 @@ export default function MessageItem({
             className="text-xs text-[rgba(255,255,255,0.45)] hover:text-[#A78BFA] transition-colors duration-150 truncate"
           >
             <span className="font-medium">
-              {message.reply_message.profile?.anonymous_name || 'Unknown'}
+              {message.reply_preview.sender_name || 'Unknown'}
             </span>
             :{' '}
-            {isGifUrl(message.reply_message.content) ? (
+            {isGifUrl(message.reply_preview.content) ? (
               <span className="italic">GIF</span>
             ) : (
-              message.reply_message.content
+              message.reply_preview.content
             )}
           </button>
         </div>

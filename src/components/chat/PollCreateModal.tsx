@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { v4 as uuidv4 } from 'uuid'
 import {
@@ -23,7 +23,9 @@ interface PollCreateModalProps {
 }
 
 export default function PollCreateModal({ open, onOpenChange, roomId }: PollCreateModalProps) {
-  const supabase = createClient()
+  // FIX: hoist into a ref so we don't recreate the Supabase client (and
+  // its realtime listeners / cookie subscriptions) on every render.
+  const supabase = useRef(createClient()).current
   const [question, setQuestion] = useState('')
   const [options, setOptions] = useState([
     { id: uuidv4(), text: '' },

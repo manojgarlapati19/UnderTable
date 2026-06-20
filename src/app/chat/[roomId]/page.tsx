@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useMessages } from '@/hooks/useMessages'
@@ -33,7 +33,9 @@ interface RoomPageProps {
 
 export default function ChatRoomPage({ params }: RoomPageProps) {
   const router = useRouter()
-  const supabase = createClient()
+    // FIX: previously created once per render — hoist into a ref so a single
+    // Supabase client (and its realtime listeners) is reused across re-renders.
+    const supabase = useRef(createClient()).current
 
   const [room, setRoom] = useState<Tables<'rooms'> | null>(null)
   const [profile, setProfile] = useState<Tables<'profiles'> | null>(null)
@@ -74,27 +76,44 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
   const onlineCount = visibleUsers.filter((u) => u.current_room === params.roomId).length
 
   useEffect(() => {
-    checkRoomAccess()
-    loadRoom()
-    loadProfile()
-    loadBlocks()
+      let cancelled = false
+      void (async () => {
+        try {
+          // FIX: previously all four calls fired in parallel without
+          // awaiting. The cleanup ran `updateCurrentRoom(null)` on unmount,
+          // but if the user navigated from room A to room B quickly the
+          // cleanup could race with the new effect's mount and briefly
+          // broadcast `null` before the new room was set. Run them in
+          // sequence (load → load → load → load → update) so the state
+          // transitions are deterministic.
+          await checkRoomAccess()
+          if (cancelled) return
+          await Promise.all([loadRoom(), loadProfile(), loadBlocks()])
+          if (cancelled) return
 
-    try {
-      updateCurrentRoom(params.roomId)
-      setCurrentRoom(params.roomId)
-    } catch (err) {
-      console.error('Failed to update current room on mount:', err)
-    }
+          try {
+            updateCurrentRoom(params.roomId)
+            setCurrentRoom(params.roomId)
+          } catch (err) {
+            console.error('Failed to update current room on mount:', err)
+          }
+        } finally {
+          if (!cancelled) {
+            setIsCheckingAccess(false)
+          }
+        }
+      })()
 
-    return () => {
-      try {
-        updateCurrentRoom(null)
-        setCurrentRoom(null)
-      } catch (err) {
-        console.error('Failed to update current room on unmount:', err)
+      return () => {
+        cancelled = true
+        try {
+          updateCurrentRoom(null)
+          setCurrentRoom(null)
+        } catch (err) {
+          console.error('Failed to update current room on unmount:', err)
+        }
       }
-    }
-  }, [params.roomId])
+    }, [params.roomId])
 
   // Ctrl+F to open search
   useEffect(() => {
@@ -142,7 +161,8 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     try {
       const { data } = await supabase
         .from('rooms')
-        .select('id, name, description, icon_emoji, is_confession_box, is_active, has_password, message_ttl_seconds, message_ttl_hours, slow_mode_seconds, created_at')
+        // Include is_readonly (gates posting) and accent_color/is_private (used in render).
+        .select('id, name, description, icon_emoji, accent_color, is_private, is_readonly, is_confession_box, is_active, has_password, message_ttl_seconds, message_ttl_hours, slow_mode_seconds, created_at')
         .eq('id', params.roomId)
         .single()
 

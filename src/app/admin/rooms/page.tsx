@@ -50,7 +50,8 @@ export default function AdminRoomsPage() {
   async function loadRooms() {
     const { data, error } = await supabase
       .from('rooms')
-      .select('id, name, description, icon_emoji, is_confession_box, is_active, has_password, is_private, is_readonly, slow_mode_seconds, message_ttl_seconds, message_ttl_hours, created_by, created_at')
+      // Include accent_color (form color picker) and room_password (form field + lock icon).
+      .select('id, name, description, icon_emoji, accent_color, room_password, is_confession_box, is_active, has_password, is_private, is_readonly, slow_mode_seconds, message_ttl_seconds, message_ttl_hours, created_by, created_at')
       .order('name')
 
     if (error) {

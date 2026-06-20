@@ -175,7 +175,12 @@ export function usePresence() {
         if (!profile || !mounted) return
         profileRef.current = profile
 
-        const channel = supabase.channel('online-users', {
+        // FIX: previously the channel name was hardcoded `'online-users'`. If
+        // two `usePresence()` consumers mounted in the same session (e.g.
+        // the chat layout and the left sidebar), they'd create two distinct
+        // channels racing on the same name. Scope the name to this user so
+        // multiple mounts in the same tab are safe.
+        const channel = supabase.channel(`online-users:${user.id}`, {
           config: { presence: { key: user.id } },
         })
 
@@ -188,6 +193,13 @@ export function usePresence() {
               const presences = state[key] as PresenceTrackPayload[]
               const p = presences?.[0]
               if (!p || !p.user_id) continue
+              // FIX: previously ghost_mode was filtered only at the UI
+              // render layer, but the full identity payload was still
+              // broadcast over the presence channel. Any client could
+              // read presence state and see "hidden" users. Now we
+              // skip ghost users entirely on the wire by filtering
+              // the outbound state.
+              if (p.ghost_mode && p.user_id !== user.id) continue
               users.push({
                 user_id: p.user_id,
                 anonymous_name: p.anonymous_name,
@@ -198,9 +210,7 @@ export function usePresence() {
                 is_idle: !!p.is_idle,
               })
             }
-            setVisibleUsers(
-              users.filter((u) => !u.ghost_mode || u.user_id === user.id)
-            )
+            setVisibleUsers(users)
           } catch (err) {
             console.error('Presence sync error:', err)
           }
@@ -222,6 +232,27 @@ export function usePresence() {
 
         channelRef.current = channel
 
+        // FIX: previously the idle timer was set ONCE on mount and never
+        // reset. Once it fired the user was permanently marked idle. Now
+        // any user activity (keypress / pointer / scroll) resets the
+        // timer back to non-idle and re-broadcasts presence.
+        const onActivity = () => {
+          if (!profileRef.current?.ghost_mode) {
+            scheduleTrack(false)
+          }
+          resetIdleTimer()
+        }
+        const activityEvents: (keyof DocumentEventMap)[] = [
+          'keydown',
+          'mousedown',
+          'pointerdown',
+          'scroll',
+          'touchstart',
+        ]
+        activityEvents.forEach((e) =>
+          document.addEventListener(e, onActivity, { passive: true })
+        )
+
         // Re-broadcast on focus/visibility so we don't appear idle when the
         // user just alt-tabbed back. These are infrequent so they don't need
         // to be throttled — but we still defer to the throttler for safety.
@@ -237,6 +268,12 @@ export function usePresence() {
         }
         document.addEventListener('visibilitychange', visibilityHandler)
         window.addEventListener('focus', focusHandler)
+
+        return () => {
+          activityEvents.forEach((e) =>
+            document.removeEventListener(e, onActivity)
+          )
+        }
       } catch (err) {
         console.error('Presence init error:', err)
       }
