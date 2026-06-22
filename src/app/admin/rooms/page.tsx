@@ -50,6 +50,7 @@ export default function AdminRoomsPage() {
   }, [])
 
   async function loadRooms() {
+    setLoading(true)
     try {
       // We try the full column list first (migration 005 applied). If the
       // production database is missing the 005 columns (`has_password`,
@@ -85,6 +86,8 @@ export default function AdminRoomsPage() {
       setRooms(data ?? [])
     } catch (err) {
       console.error('Failed to load rooms:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
