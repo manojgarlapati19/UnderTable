@@ -87,7 +87,14 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .select('id, name, description, icon_emoji, is_confession_box, is_active, has_password, created_at, slow_mode_seconds, message_ttl_hours, message_ttl_seconds')
+        // NOTE: select does NOT include `is_active`. That column was added in
+        // migration 005, but production databases deployed before that
+        // migration ran will throw `column rooms.is_active does not exist`
+        // (Postgres 42703). Including it in the select makes every rooms
+        // list fail to load on those deployments. The column is currently
+        // unused for any UI logic — keep it out until migration 005 has been
+        // run on the target environment.
+        .select('id, name, description, icon_emoji, is_confession_box, has_password, created_at, slow_mode_seconds, message_ttl_hours, message_ttl_seconds')
         .order('name')
       if (error) {
         console.error('Failed to load rooms:', error)

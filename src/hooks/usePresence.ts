@@ -59,6 +59,7 @@ type SupabaseLike = {
     select: (cols: string) => {
       eq: (col: 'id', val: string) => {
         single: () => Promise<{ data: Pick<ProfileRow, 'id' | 'anonymous_name' | 'avatar_color' | 'ghost_mode'> | null }>
+        maybeSingle: () => Promise<{ data: Pick<ProfileRow, 'id' | 'anonymous_name' | 'avatar_color' | 'ghost_mode'> | null }>
       }
     }
   }
@@ -86,6 +87,18 @@ export function usePresence() {
   // Serial counter ensures we only apply the *latest* track payload when
   // an old, in-flight track resolves.
   const trackSeqRef = useRef<number>(0)
+
+  // FIX: stable per-mount id so the channel name is unique across the
+  // multiple `usePresence()` consumers in the same tab (chat page +
+  // RightSidebar). Without this both consumers create a channel named
+  // `online-users:<user.id>` and Supabase throws "cannot add `presence`
+  // callbacks for realtime:online-users:<id> after `subscribe()`" on the
+  // second mount because both consumers race on the same channel name.
+  const mountIdRef = useRef<string>('')
+
+  // FIX: bumped on every effect run so async work from a previous mount
+  // can detect it's stale and bail before mutating refs.
+  const initTokenRef = useRef<symbol>(Symbol('usePresence-init-0'))
 
   const buildPayload = useCallback(
     (is_idle: boolean, roomOverride?: string | null): PresenceTrackPayload | null => {
@@ -160,29 +173,46 @@ export function usePresence() {
     let mounted = true
     let visibilityHandler: (() => void) | null = null
     let focusHandler: (() => void) | null = null
+    // FIX: bump the instance token every effect run. Any in-flight `init`
+    // from a previous mount will compare its captured token to this and
+    // bail before touching channelRef.current (which the new run has
+    // already replaced with its own channel).
+    initTokenRef.current = Symbol('usePresence-init')
+    const instanceToken = initTokenRef.current
 
     async function init() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
+        // Bail if the effect re-ran while we were awaiting.
         if (!user || !mounted) return
 
         const { data: profile } = await supabase
           .from('profiles')
           .select('id, anonymous_name, avatar_color, ghost_mode')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
+        // FIX: bail again — and additionally check that our instance
+        // is still the live one before touching channelRef.
         if (!profile || !mounted) return
+        if (instanceToken !== initTokenRef.current) return
         profileRef.current = profile
 
-        // FIX: previously the channel name was hardcoded `'online-users'`. If
-        // two `usePresence()` consumers mounted in the same session (e.g.
-        // the chat layout and the left sidebar), they'd create two distinct
-        // channels racing on the same name. Scope the name to this user so
-        // multiple mounts in the same tab are safe.
-        const channel = supabase.channel(`online-users:${user.id}`, {
-          config: { presence: { key: user.id } },
-        })
+        // FIX: previously the channel name was hardcoded `'online-users'`.
+        // Then we scoped it to `online-users:<user.id>`. But two
+        // `usePresence()` consumers (chat page + RightSidebar) each create
+        // the same channel name and Supabase throws "cannot add `presence`
+        // callbacks ... after `subscribe()`" on the second one. Append a
+        // per-mount suffix so each consumer has its own channel.
+        if (!mountIdRef.current) {
+          mountIdRef.current = Math.random().toString(36).slice(2, 10)
+        }
+        const channel = supabase.channel(
+          `online-users:${user.id}:${mountIdRef.current}`,
+          {
+            config: { presence: { key: user.id } },
+          }
+        )
 
         channel.on('presence', { event: 'sync' }, () => {
           if (!mounted) return

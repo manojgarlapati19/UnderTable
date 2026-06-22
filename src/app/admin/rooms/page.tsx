@@ -52,8 +52,11 @@ export default function AdminRoomsPage() {
   async function loadRooms() {
     const { data, error } = await supabase
       .from('rooms')
-      // Include accent_color (form color picker) and room_password (form field + lock icon).
-      .select('id, name, description, icon_emoji, accent_color, room_password, is_confession_box, is_active, has_password, is_private, is_readonly, slow_mode_seconds, message_ttl_seconds, message_ttl_hours, created_by, created_at')
+      // `is_active` is omitted for the same reason as LeftSidebar.tsx —
+      // see the comment there. Production may not have migration 005
+      // applied yet. The column is not referenced elsewhere; remove this
+      // note after running 005 on the target Supabase project.
+      .select('id, name, description, icon_emoji, accent_color, room_password, is_confession_box, has_password, is_private, is_readonly, slow_mode_seconds, message_ttl_seconds, message_ttl_hours, created_by, created_at')
       .order('name')
 
     if (error) {
