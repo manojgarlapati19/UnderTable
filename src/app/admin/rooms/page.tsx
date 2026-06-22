@@ -66,13 +66,10 @@ export default function AdminRoomsPage() {
       let data: Tables<'rooms'>[] | null = null
       let error: { code?: string; message?: string } | null = null
 
-      console.log('[loadRooms] attempting FULL_COLUMNS query')
       const first = await supabase.from('rooms').select(FULL_COLUMNS).order('name')
-      console.log('[loadRooms] FULL result:', { data: first.data, error: first.error })
       if (first.error && first.error.code === '42703') {
-        console.warn('[loadRooms] 005 columns missing, retrying with legacy schema')
+        console.warn('[loadRooms] migration 005 columns missing, retrying with legacy schema')
         const second = await supabase.from('rooms').select(LEGACY_COLUMNS).order('name')
-        console.log('[loadRooms] LEGACY result:', { data: second.data, error: second.error })
         data = (second.data as unknown as Tables<'rooms'>[]) ?? null
         error = second.error
       } else {
