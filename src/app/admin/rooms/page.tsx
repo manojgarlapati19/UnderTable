@@ -50,30 +50,42 @@ export default function AdminRoomsPage() {
   }, [])
 
   async function loadRooms() {
-    const { data, error } = await supabase
-      .from('rooms')
-      // `is_active` is omitted for the same reason as LeftSidebar.tsx —
-      // see the comment there. Production may not have migration 005
-      // applied yet. The column is not referenced elsewhere; remove this
-      // note after running 005 on the target Supabase project.
-      .select('id, name, description, icon_emoji, accent_color, room_password, is_confession_box, has_password, is_private, is_readonly, slow_mode_seconds, message_ttl_seconds, message_ttl_hours, created_by, created_at')
-      .order('name')
+    try {
+      // We try the full column list first (migration 005 applied). If the
+      // production database is missing the 005 columns (`has_password`,
+      // `room_password`, `is_active`, `message_ttl_seconds`), Postgres
+      // returns 42703 and we retry without those columns so the rooms
+      // list still loads. Once migration 009 has been applied on the
+      // target environment, the first query will succeed and the
+      // fallback is never used.
+      const FULL_COLUMNS =
+        'id, name, description, icon_emoji, accent_color, room_password, is_active, is_confession_box, has_password, is_private, is_readonly, slow_mode_seconds, message_ttl_seconds, message_ttl_hours, created_by, created_at'
+      const LEGACY_COLUMNS =
+        'id, name, description, icon_emoji, accent_color, is_confession_box, is_private, is_readonly, slow_mode_seconds, created_by, created_at'
 
-    if (error) {
-      console.error('Failed to load rooms:', error)
-      toast.error('Failed to refresh rooms list')
-      setLoading(false)
-      return
-    }
+      let data: Tables<'rooms'>[] | null = null
+      let error: { code?: string; message?: string } | null = null
 
-    if (data) {
-      // The query selects a subset of `rooms` columns; with `Schema = any`
-      // (see src/lib/supabase/client.ts) the result is typed as the selected
-      // shape rather than the full `Row`. Cast through `unknown` to align it
-      // with `Tables<'rooms'>`.
-      setRooms(data as unknown as Tables<'rooms'>[])
+      const first = await supabase.from('rooms').select(FULL_COLUMNS).order('name')
+      if (first.error && first.error.code === '42703') {
+        console.warn('rooms: 005 columns missing, retrying with legacy schema')
+        const second = await supabase.from('rooms').select(LEGACY_COLUMNS).order('name')
+        data = (second.data as unknown as Tables<'rooms'>[]) ?? null
+        error = second.error
+      } else {
+        data = (first.data as unknown as Tables<'rooms'>[]) ?? null
+        error = first.error
+      }
+
+      if (error) {
+        console.error('Failed to load rooms:', error)
+        toast.error(`Failed to load rooms: ${error.message}`)
+        return
+      }
+      setRooms(data ?? [])
+    } catch (err) {
+      console.error('Failed to load rooms:', err)
     }
-    setLoading(false)
   }
 
   // Set BOTH message_ttl_hours (legacy schema) and message_ttl_seconds (the

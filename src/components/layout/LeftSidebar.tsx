@@ -85,22 +85,33 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
 
   async function loadRooms() {
     try {
-      const { data, error } = await supabase
-        .from('rooms')
-        // NOTE: select does NOT include `is_active`. That column was added in
-        // migration 005, but production databases deployed before that
-        // migration ran will throw `column rooms.is_active does not exist`
-        // (Postgres 42703). Including it in the select makes every rooms
-        // list fail to load on those deployments. The column is currently
-        // unused for any UI logic — keep it out until migration 005 has been
-        // run on the target environment.
-        .select('id, name, description, icon_emoji, is_confession_box, has_password, created_at, slow_mode_seconds, message_ttl_hours, message_ttl_seconds')
-        .order('name')
+      // See admin/rooms/page.tsx for the rationale: try the full column list
+      // first (migration 005 applied), fall back to a legacy select on
+      // Postgres 42703 so the rooms list still loads on databases that
+      // haven't run migration 005 yet.
+      const FULL_COLUMNS =
+        'id, name, description, icon_emoji, is_confession_box, has_password, created_at, slow_mode_seconds, message_ttl_hours, message_ttl_seconds'
+      const LEGACY_COLUMNS =
+        'id, name, description, icon_emoji, is_confession_box, created_at, slow_mode_seconds'
+
+      let data: RoomWithUnread[] | null = null
+      let error: { code?: string; message?: string } | null = null
+
+      const first = await supabase.from('rooms').select(FULL_COLUMNS).order('name')
+      if (first.error && first.error.code === '42703') {
+        const second = await supabase.from('rooms').select(LEGACY_COLUMNS).order('name')
+        data = (second.data as unknown as RoomWithUnread[]) ?? null
+        error = second.error
+      } else {
+        data = (first.data as unknown as RoomWithUnread[]) ?? null
+        error = first.error
+      }
+
       if (error) {
         console.error('Failed to load rooms:', error)
         return
       }
-      if (data) setRooms(data as unknown as RoomWithUnread[])
+      setRooms(data ?? [])
     } catch (err) {
       console.error('Failed to load rooms:', err)
     }
