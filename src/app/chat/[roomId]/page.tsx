@@ -161,8 +161,10 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     try {
       const { data } = await supabase
         .from('rooms')
-        // Include is_readonly (gates posting) and accent_color/is_private (used in render).
-        .select('id, name, description, icon_emoji, accent_color, is_private, is_readonly, is_confession_box, is_active, has_password, message_ttl_seconds, message_ttl_hours, slow_mode_seconds, created_at')
+        // `is_active` omitted — see LeftSidebar.tsx comment. The column was
+        // added in migration 005 which may not yet be applied to the target
+        // Supabase project.
+        .select('id, name, description, icon_emoji, accent_color, is_private, is_readonly, is_confession_box, has_password, message_ttl_seconds, message_ttl_hours, slow_mode_seconds, created_at')
         .eq('id', params.roomId)
         .single()
 
