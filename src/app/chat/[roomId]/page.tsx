@@ -136,13 +136,28 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
   async function checkRoomAccess() {
     try {
-      const { data: roomData } = await supabase
+      // Migration 005 added `has_password`. To keep this working on a
+      // database that hasn't run 005 yet, fall back to a legacy select
+      // on Postgres 42703.
+      const first = await supabase
         .from('rooms')
         .select('has_password')
         .eq('id', params.roomId)
-        .single()
+        .maybeSingle()
 
-      if (roomData?.has_password) {
+      let hasPassword = false
+      if (first.error && first.error.code === '42703') {
+        // No password concept pre-005 — skip the password gate.
+        hasPassword = false
+      } else if (first.error) {
+        console.error('Failed to check room access:', first.error)
+        setIsCheckingAccess(false)
+        return
+      } else {
+        hasPassword = !!first.data?.has_password
+      }
+
+      if (hasPassword) {
         const hasAccess = sessionStorage.getItem(`room_access_${params.roomId}`)
         if (!hasAccess) {
           toast.error('This room is password protected')
@@ -159,16 +174,40 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
   async function loadRoom() {
     try {
-      const { data } = await supabase
-        .from('rooms')
-        // `is_active` omitted — see LeftSidebar.tsx comment. The column was
-        // added in migration 005 which may not yet be applied to the target
-        // Supabase project.
-        .select('id, name, description, icon_emoji, accent_color, is_private, is_readonly, is_confession_box, has_password, message_ttl_seconds, message_ttl_hours, slow_mode_seconds, created_at')
-        .eq('id', params.roomId)
-        .single()
+      // Try the full column list (migration 005 applied). On Postgres
+      // 42703 (column missing) fall back to the legacy schema so the
+      // page still loads on databases that haven't run 005 yet.
+      const FULL_COLUMNS =
+        'id, name, description, icon_emoji, accent_color, is_private, is_readonly, is_confession_box, is_active, has_password, message_ttl_seconds, message_ttl_hours, slow_mode_seconds, created_at'
+      const LEGACY_COLUMNS =
+        'id, name, description, icon_emoji, accent_color, is_private, is_readonly, is_confession_box, message_ttl_hours, slow_mode_seconds, created_at'
 
-      if (data) setRoom(data as unknown as Tables<'rooms'>)
+      const first = await supabase
+        .from('rooms')
+        .select(FULL_COLUMNS)
+        .eq('id', params.roomId)
+        .maybeSingle()
+
+      let row: Tables<'rooms'> | null = null
+      if (first.error && first.error.code === '42703') {
+        const second = await supabase
+          .from('rooms')
+          .select(LEGACY_COLUMNS)
+          .eq('id', params.roomId)
+          .maybeSingle()
+        if (second.error) {
+          console.error('Failed to load room:', second.error)
+          return
+        }
+        row = (second.data as unknown as Tables<'rooms'>) ?? null
+      } else if (first.error) {
+        console.error('Failed to load room:', first.error)
+        return
+      } else {
+        row = (first.data as unknown as Tables<'rooms'>) ?? null
+      }
+
+      if (row) setRoom(row)
     } catch (err) {
       console.error('Failed to load room:', err)
     }
