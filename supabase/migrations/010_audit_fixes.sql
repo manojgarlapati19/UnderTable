@@ -5,6 +5,15 @@
 -- Every statement is idempotent (IF EXISTS / IF NOT EXISTS / CREATE OR REPLACE)
 -- so it is safe to re-run.
 --
+-- NOTE: this file does NOT assume migrations 001-009 were fully applied.
+-- Running it against a fresh/partial database surfaced
+-- `relation "verified_room_access" does not exist`, meaning at least
+-- migration 007 (and possibly 005) had never actually run here. Section 0
+-- below defensively re-creates every prerequisite object (rooms password
+-- columns, is_admin()/is_approved(), the verified_room_access table,
+-- 'rejected' status, claim_invite_code(), the 10-min edit window) so this
+-- single file is a true standalone baseline regardless of migration history.
+--
 -- Fixes, grouped by table:
 --   verified_room_access : RLS was never enabled -> password gate bypassable
 --   can_access_room()    : parameter shadowed column name -> ambiguous/tautological
@@ -18,6 +27,121 @@
 --                          included as explicit re-asserts so this file is a
 --                          complete standalone fix script)
 -- ============================================================================
+
+-- ---------------------------------------------------------------------------
+-- 0. Defensive re-application of prerequisite schema. This migration was
+--    written assuming 001-009 had already run, but on at least one target
+--    database migrations 005/007 were never actually applied (confirmed by
+--    `relation "verified_room_access" does not exist` when this file was
+--    first run). Recreate every object this script depends on, guarded by
+--    IF NOT EXISTS, so this file is truly standalone regardless of which
+--    of 001-009 have or haven't been applied.
+-- ---------------------------------------------------------------------------
+
+-- From migration 005: rooms columns used by can_access_room() below.
+ALTER TABLE rooms
+  ADD COLUMN IF NOT EXISTS room_password TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS has_password BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true,
+  ADD COLUMN IF NOT EXISTS message_ttl_seconds INT DEFAULT NULL;
+
+CREATE OR REPLACE FUNCTION sync_room_has_password()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.has_password := (NEW.room_password IS NOT NULL AND NEW.room_password != '');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_rooms_sync_has_password ON rooms;
+CREATE TRIGGER trg_rooms_sync_has_password
+  BEFORE INSERT OR UPDATE OF room_password ON rooms
+  FOR EACH ROW
+  EXECUTE FUNCTION sync_room_has_password();
+
+UPDATE rooms SET has_password = (room_password IS NOT NULL AND room_password != '')
+  WHERE has_password IS DISTINCT FROM (room_password IS NOT NULL AND room_password != '');
+
+-- From migration 002: helper functions every policy below calls. Re-applying
+-- is a no-op if they already exist correctly (CREATE OR REPLACE), and a
+-- real fix if this database somehow never got migration 002 either.
+CREATE OR REPLACE FUNCTION is_approved()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = auth.uid() AND status = 'approved'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = auth.uid() AND role = 'admin' AND status = 'approved'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- From migration 007: the table can_access_room()'s password-gate check
+-- reads from. This was the object actually missing on the target database.
+CREATE TABLE IF NOT EXISTS verified_room_access (
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  room_id UUID REFERENCES rooms(id) ON DELETE CASCADE NOT NULL,
+  verified_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (user_id, room_id)
+);
+
+-- From migration 005: 'rejected' status (admin/members reject action relies
+-- on this being a legal value) and the atomic invite-claim function
+-- (release_invite_code below assumes invite_links has uses_count/max_uses,
+-- which are from 001, but claim_invite_code itself is what invite-signup
+-- calls at signup time -- reapply defensively in case 005 never landed).
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_status_check;
+ALTER TABLE profiles ADD CONSTRAINT profiles_status_check
+  CHECK (status IN ('pending', 'approved', 'rejected', 'banned'));
+
+CREATE OR REPLACE FUNCTION claim_invite_code(p_code TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_invite invite_links%ROWTYPE;
+  v_remaining INT;
+BEGIN
+  SELECT * INTO v_invite
+  FROM invite_links
+  WHERE code = p_code
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'Invalid invite code');
+  END IF;
+
+  IF NOT v_invite.is_active THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'This invite link has been revoked');
+  END IF;
+
+  IF v_invite.max_uses IS NOT NULL AND v_invite.uses_count >= v_invite.max_uses THEN
+    RETURN jsonb_build_object('valid', false, 'error', 'This invite link has reached its maximum uses');
+  END IF;
+
+  UPDATE invite_links
+  SET uses_count = uses_count + 1
+  WHERE id = v_invite.id;
+
+  v_remaining := CASE
+    WHEN v_invite.max_uses IS NULL THEN -1
+    ELSE GREATEST(0, v_invite.max_uses - v_invite.uses_count - 1)
+  END;
+
+  RETURN jsonb_build_object('valid', true, 'uses_left', v_remaining);
+END;
+$$;
 
 -- ---------------------------------------------------------------------------
 -- 1. verified_room_access: RLS was never enabled in migration 007, which
@@ -114,6 +238,27 @@ CREATE POLICY "room_members_select" ON room_members
     OR is_admin()
     OR is_member_of_room(room_members.room_id)
   );
+
+-- From migration 005/007: the 10-minute edit window. If 005 never landed on
+-- this database, the only UPDATE policy on messages was 002's permissive
+-- "owner or admin, no time limit" -- reapply the time-limited version and
+-- drop the permissive one, same as 007 did.
+CREATE OR REPLACE FUNCTION is_within_edit_window(message_id UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  msg_created_at TIMESTAMPTZ;
+BEGIN
+  SELECT created_at INTO msg_created_at FROM messages WHERE id = message_id;
+  RETURN EXTRACT(EPOCH FROM (now() - msg_created_at)) < 600;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP POLICY IF EXISTS "messages_update_own" ON messages;
+DROP POLICY IF EXISTS "messages_update_own_only" ON messages;
+CREATE POLICY "messages_update_own_only"
+  ON messages FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id AND is_within_edit_window(id));
 
 -- ---------------------------------------------------------------------------
 -- 4. messages_update_admin (005) checked `role = 'admin'` without also
@@ -265,6 +410,12 @@ BEGIN
     WHERE pubname = 'supabase_realtime' AND tablename = 'messages'
   ) THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'profiles'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
   END IF;
 END $$;
 
