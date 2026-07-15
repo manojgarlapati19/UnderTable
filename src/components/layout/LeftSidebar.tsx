@@ -308,16 +308,21 @@ export default function LeftSidebar({ isOpen, onToggle, onOpenSettings }: LeftSi
           <span className="text-[11px] font-medium text-[rgba(255,255,255,0.35)] uppercase tracking-wider">
             Rooms
           </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 rounded-[8px] text-[rgba(255,255,255,0.45)] hover:text-white"
-            asChild
-          >
-            <Link href="/admin/rooms">
-              <Plus className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
+          {/* FIX: this "+" button linked to /admin/rooms for every user, not
+              just admins. Non-admins clicking it just got redirected away by
+              middleware, and it wasn't labeled as an admin action at all. */}
+          {profile?.role === 'admin' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-[8px] text-[rgba(255,255,255,0.45)] hover:text-white"
+              asChild
+            >
+              <Link href="/admin/rooms" title="Create room (admin)">
+                <Plus className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          )}
         </div>
 
         {/* Rooms list */}

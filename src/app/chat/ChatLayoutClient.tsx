@@ -25,6 +25,7 @@ export default function ChatLayoutClient({
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -72,7 +73,7 @@ export default function ChatLayoutClient({
         // instead, which we treat as "needs to land on the pending page".
         const { data: profile } = await supabase
           .from('profiles')
-          .select('status')
+          .select('status, role')
           .eq('id', user.id)
           .maybeSingle()
 
@@ -81,6 +82,7 @@ export default function ChatLayoutClient({
           return
         }
 
+        setIsAdmin(profile.role === 'admin')
         setLoading(false)
       } catch (err) {
         console.error('Auth check error:', err)
@@ -118,7 +120,7 @@ export default function ChatLayoutClient({
         </Button>
 
         {/* Icon Rail - always visible on desktop */}
-        <IconRail onOpenSettings={() => setSettingsOpen(true)} />
+        <IconRail onOpenSettings={() => setSettingsOpen(true)} isAdmin={isAdmin} />
 
         {/* Left Sidebar - Room sidebar */}
         <div className="flex lg:w-[224px] lg:shrink-0">

@@ -8,6 +8,7 @@ import {
   Bookmark,
   Settings,
   LogOut,
+  ShieldCheck,
 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
@@ -15,9 +16,10 @@ import { cn } from '@/lib/utils/cn'
 
 interface IconRailProps {
   onOpenSettings?: () => void
+  isAdmin?: boolean
 }
 
-export default function IconRail({ onOpenSettings }: IconRailProps) {
+export default function IconRail({ onOpenSettings, isAdmin }: IconRailProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -132,8 +134,26 @@ export default function IconRail({ onOpenSettings }: IconRailProps) {
 
       <Separator style={{ width: '24px', margin: '4px 0', background: 'rgba(255,255,255,0.08)' }} />
 
-      {/* Bottom: Settings + Logout */}
+      {/* Bottom: Admin (if applicable) + Settings + Logout */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', paddingBottom: '12px', paddingLeft: '6px', paddingRight: '6px' }}>
+        {/* FIX: there was previously no way to reach the admin panel from
+            inside the chat UI at all — an admin had to know the /admin URL
+            by heart. This is the only discoverable entry point into
+            /admin (dashboard, invites, members, rooms, reports, etc). */}
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-[11px] transition-all duration-150',
+              pathname.startsWith('/admin')
+                ? 'bg-[rgba(167,139,250,0.16)] text-white'
+                : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)]'
+            )}
+            title="Admin panel"
+          >
+            <ShieldCheck className="h-5 w-5" />
+          </Link>
+        )}
         <button
           onClick={onOpenSettings}
           className="flex h-10 w-10 items-center justify-center rounded-[11px] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(255,255,255,0.7)] transition-all duration-150"
