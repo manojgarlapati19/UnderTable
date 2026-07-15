@@ -24,38 +24,55 @@ export default function AdminInvitesPage() {
   const [loading, setLoading] = useState(true)
   const [showGenerate, setShowGenerate] = useState(false)
   const [maxUses, setMaxUses] = useState('')
+  const [revokeTarget, setRevokeTarget] = useState<Tables<'invite_links'> | null>(null)
 
   useEffect(() => {
     loadInvites()
   }, [])
 
   async function loadInvites() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('invite_links')
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (data) setInvites(data)
+    if (error) {
+      toast.error(`Failed to load invite links: ${error.message}`)
+    } else {
+      setInvites(data || [])
+    }
     setLoading(false)
   }
 
   async function generateLink() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      toast.error('You must be signed in to generate an invite link.')
+      return
+    }
+
+    // FIX: guard against a non-numeric maxUses producing NaN in the insert.
+    const parsedMaxUses = maxUses ? parseInt(maxUses, 10) : null
+    if (maxUses && (!Number.isFinite(parsedMaxUses) || (parsedMaxUses as number) <= 0)) {
+      toast.error('Max uses must be a positive number')
+      return
+    }
 
     const code = uuidv4().slice(0, 8)
     const { error } = await supabase.from('invite_links').insert({
       code,
       created_by: user.id,
-      max_uses: maxUses ? parseInt(maxUses) : null,
+      max_uses: parsedMaxUses,
     })
 
-    if (!error) {
-      toast.success('Invite link generated!')
-      setShowGenerate(false)
-      setMaxUses('')
-      loadInvites()
+    if (error) {
+      toast.error(`Failed to generate invite link: ${error.message}`)
+      return
     }
+    toast.success('Invite link generated!')
+    setShowGenerate(false)
+    setMaxUses('')
+    loadInvites()
   }
 
   function copyLink(code: string) {
@@ -70,10 +87,13 @@ export default function AdminInvitesPage() {
       .update({ is_active: false })
       .eq('id', id)
 
-    if (!error) {
-      toast.success('Link revoked')
-      loadInvites()
+    if (error) {
+      toast.error(`Failed to revoke link: ${error.message}`)
+      return
     }
+    toast.success('Link revoked')
+    setRevokeTarget(null)
+    loadInvites()
   }
 
   if (loading) {
@@ -120,7 +140,7 @@ export default function AdminInvitesPage() {
                         <Copy className="h-4 w-4" />
                       </Button>
                       {invite.is_active && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[8px] text-red-400" onClick={() => revokeLink(invite.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[8px] text-red-400" onClick={() => setRevokeTarget(invite)}>
                           <XCircle className="h-4 w-4" />
                         </Button>
                       )}
@@ -156,6 +176,24 @@ export default function AdminInvitesPage() {
               />
             </div>
             <Button onClick={generateLink} className="w-full">Generate</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!revokeTarget} onOpenChange={(open) => { if (!open) setRevokeTarget(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Revoke invite link?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-[rgba(255,255,255,0.6)]">
+            The code <code className="text-xs bg-[rgba(255,255,255,0.06)] text-white px-1.5 py-0.5 rounded">{revokeTarget?.code}</code> will stop working immediately.
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setRevokeTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => revokeTarget && revokeLink(revokeTarget.id)}>
+              <XCircle className="h-4 w-4 mr-1" />
+              Revoke
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

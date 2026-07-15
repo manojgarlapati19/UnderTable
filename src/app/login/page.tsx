@@ -19,7 +19,13 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(errorParam === 'banned' ? 'Your account has been banned' : '')
+  const [error, setError] = useState(
+    errorParam === 'banned'
+      ? 'Your account has been banned'
+      : errorParam === 'rejected'
+      ? 'Your signup request was not approved'
+      : ''
+  )
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()

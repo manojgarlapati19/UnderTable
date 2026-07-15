@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button'
 import StatsCards from '@/components/admin/StatsCards'
 import Link from 'next/link'
 import { Link2, Plus, Users } from 'lucide-react'
-import { toast } from 'sonner'
-import { v4 as uuidv4 } from 'uuid'
 
 export default function AdminDashboardPage() {
   const supabase = createClient()
@@ -20,10 +18,6 @@ export default function AdminDashboardPage() {
     flaggedMessages: 0,
     roomsCount: 0,
   })
-
-  // Reserved for the upcoming activity feed component.
-  const [, setRecentActions] = useState<Record<string, unknown>[]>([])
-  void setRecentActions
 
   useEffect(() => {
     loadStats()
@@ -38,40 +32,32 @@ export default function AdminDashboardPage() {
       { count: pendingApprovals },
       { count: messagesToday },
       { count: roomsCount },
-      { data: flaggedMessages },
+      { count: flaggedMessages },
+      { data: activeTodayRows },
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('messages').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
+      supabase.from('messages').select('*', { count: 'exact', head: true }).eq('is_deleted', false).gte('created_at', today.toISOString()),
       supabase.from('rooms').select('*', { count: 'exact', head: true }),
-      supabase.from('messages').select('id').eq('is_flagged', true).limit(10),
+      // FIX: this previously did `.select('id').eq('is_flagged', true).limit(10)`
+      // and used the *array length* as the count, so the dashboard silently
+      // capped at 10 regardless of how many messages were actually flagged.
+      supabase.from('messages').select('*', { count: 'exact', head: true }).eq('is_flagged', true).eq('is_deleted', false),
+      // FIX: "Active Today" was hard-coded to 0 and never computed. Approximate
+      // it as the number of distinct senders who posted a message today.
+      supabase.from('messages').select('user_id').eq('is_deleted', false).gte('created_at', today.toISOString()),
     ])
+
+    const activeToday = new Set((activeTodayRows || []).map((r) => r.user_id)).size
 
     setStats({
       totalMembers: totalMembers || 0,
       pendingApprovals: pendingApprovals || 0,
-      activeToday: 0,
+      activeToday,
       messagesToday: messagesToday || 0,
-      flaggedMessages: flaggedMessages?.length || 0,
+      flaggedMessages: flaggedMessages || 0,
       roomsCount: roomsCount || 0,
     })
-  }
-
-  async function generateInviteLink() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const code = uuidv4().slice(0, 8)
-    const { error } = await supabase.from('invite_links').insert({
-      code,
-      created_by: user.id,
-    } as never)
-
-    if (!error) {
-      const url = `${window.location.origin}/invite/${code}`
-      await navigator.clipboard.writeText(url)
-      toast.success('Invite link copied to clipboard!')
-    }
   }
 
   return (
@@ -79,9 +65,11 @@ export default function AdminDashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-[26px] font-medium text-white">Dashboard</h1>
         <div className="flex gap-2">
-          <Button onClick={generateInviteLink}>
-            <Link2 className="h-4 w-4 mr-1" />
-            Generate Invite Link
+          <Button asChild>
+            <Link href="/admin/invites">
+              <Link2 className="h-4 w-4 mr-1" />
+              Generate Invite Link
+            </Link>
           </Button>
         </div>
       </div>
@@ -89,9 +77,11 @@ export default function AdminDashboardPage() {
       <StatsCards stats={stats} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[14px]" onClick={generateInviteLink}>
-          <Link2 className="h-5 w-5" />
-          <span className="text-xs">Generate Invite Link</span>
+        <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[14px]" asChild>
+          <Link href="/admin/invites">
+            <Link2 className="h-5 w-5" />
+            <span className="text-xs">Generate Invite Link</span>
+          </Link>
         </Button>
         <Button variant="outline" className="h-20 flex-col items-center justify-center gap-1 rounded-[14px]" asChild>
           <Link href="/admin/rooms">

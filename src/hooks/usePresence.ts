@@ -38,11 +38,16 @@ interface TypingTrackPayload {
 // Minimal shape of a Supabase realtime channel — the public types are not
 // fully exported, so we use a structural alias.
 type RealtimeChannel = {
-  on: (
+  on(
     event: 'presence',
     options: { event: 'sync' | 'join' | 'leave' },
     cb: (payload?: unknown) => void
-  ) => RealtimeChannel
+  ): RealtimeChannel
+  on(
+    event: 'postgres_changes',
+    options: { event: 'UPDATE'; schema: 'public'; table: 'profiles'; filter: string },
+    cb: (payload: { new: Partial<ProfileRow> }) => void
+  ): RealtimeChannel
   subscribe: (
     cb?: (status: string, err?: Error) => void
   ) => RealtimeChannel
@@ -74,6 +79,7 @@ export function usePresence() {
   const channelRef = useRef<RealtimeChannel | null>(null)
   const profileRef = useRef<Pick<ProfileRow, 'id' | 'anonymous_name' | 'avatar_color' | 'ghost_mode'> | null>(null)
   const typingChannelRef = useRef<RealtimeChannel | null>(null)
+  const profileChannelRef = useRef<RealtimeChannel | null>(null)
   const currentRoomRef = useRef<string | null>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -262,6 +268,31 @@ export function usePresence() {
 
         channelRef.current = channel
 
+        // FIX: LeftSidebar/SettingsModal toggle `profiles.ghost_mode`
+        // directly in the DB, but this hook only ever read that column
+        // once at init and cached it in `profileRef`. Flipping ghost mode
+        // mid-session had no effect on the live presence broadcast (or the
+        // typing channel) until the whole hook remounted. Subscribe to
+        // updates on this user's own profile row and immediately refresh
+        // the cached value + re-broadcast presence so the toggle takes
+        // effect right away.
+        const profileChannel = supabase.channel(`profile-sync:${user.id}:${mountIdRef.current}`)
+        profileChannel
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+            (payload) => {
+              if (!mounted || !profileRef.current) return
+              profileRef.current = { ...profileRef.current, ...payload.new }
+              const payloadNow = buildPayload(false)
+              if (payloadNow) void flushTrack(payloadNow)
+            }
+          )
+          .subscribe((status: string, err?: Error) => {
+            if (err) console.error('Profile-sync channel subscribe error:', err)
+          })
+        profileChannelRef.current = profileChannel
+
         // FIX: previously the idle timer was set ONCE on mount and never
         // reset. Once it fired the user was permanently marked idle. Now
         // any user activity (keypress / pointer / scroll) resets the
@@ -288,12 +319,16 @@ export function usePresence() {
         // to be throttled — but we still defer to the throttler for safety.
         visibilityHandler = () => {
           if (document.visibilityState === 'visible') {
-            scheduleTrack(false)
+            if (!profileRef.current?.ghost_mode) {
+              scheduleTrack(false)
+            }
             resetIdleTimer()
           }
         }
         focusHandler = () => {
-          scheduleTrack(false)
+          if (!profileRef.current?.ghost_mode) {
+            scheduleTrack(false)
+          }
           resetIdleTimer()
         }
         document.addEventListener('visibilitychange', visibilityHandler)
@@ -328,6 +363,12 @@ export function usePresence() {
           console.error('Failed to remove typing channel:', err)
         })
         typingChannelRef.current = null
+      }
+      if (profileChannelRef.current) {
+        supabase.removeChannel(profileChannelRef.current).catch((err: unknown) => {
+          console.error('Failed to remove profile-sync channel:', err)
+        })
+        profileChannelRef.current = null
       }
     }
   }, [buildPayload, flushTrack, resetIdleTimer, scheduleTrack])
@@ -389,6 +430,11 @@ export function usePresence() {
 
   const setTyping = useCallback(async (typing: boolean) => {
     try {
+      // FIX: ghost mode is supposed to hide typing status too (see
+      // SettingsModal's "presence, read receipts, and typing indicator
+      // will be hidden" copy), but this previously tracked unconditionally,
+      // leaking ghost users' typing state to everyone else in the room.
+      if (profileRef.current?.ghost_mode) return
       if (typingChannelRef.current && profileRef.current) {
         await typingChannelRef.current.track({
           user_id: profileRef.current.id,

@@ -33,6 +33,8 @@ export default function AdminRoomsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editingRoom, setEditingRoom] = useState<Tables<'rooms'> | null>(null)
   const [deletingRoom, setDeletingRoom] = useState<Tables<'rooms'> | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -40,6 +42,7 @@ export default function AdminRoomsPage() {
     accent_color: '#7C3AED',
     is_private: false,
     is_confession_box: false,
+    is_active: true,
     message_ttl_hours: '' as string,
     slow_mode_seconds: '0',
     room_password: '',
@@ -109,41 +112,47 @@ export default function AdminRoomsPage() {
 
       const ttlSeconds = ttlHoursToSeconds(form.message_ttl_hours)
 
-      // FIX: every error path now surfaces to the user via toast AND console.
-      // Previously `if (!error)` was the only branch — RLS rejections, FK
-      // violations, or any other failure left the user staring at a modal
-      // with no feedback, making "I can't create a room" impossible to debug.
-      const { error } = await supabase.from('rooms').insert({
-        name: form.name,
-        description: form.description,
-        icon_emoji: form.icon_emoji || '#',
-        accent_color: form.accent_color,
-        is_private: form.is_private,
-        is_confession_box: form.is_confession_box,
-        message_ttl_hours: ttlSeconds ? Math.round(ttlSeconds / 3600) : null,
-        message_ttl_seconds: ttlSeconds,
-        slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
-        room_password: form.room_password || null,
-        created_by: user.id,
-      })
+      setSaving(true)
+      try {
+        // FIX: every error path now surfaces to the user via toast AND console.
+        // Previously `if (!error)` was the only branch — RLS rejections, FK
+        // violations, or any other failure left the user staring at a modal
+        // with no feedback, making "I can't create a room" impossible to debug.
+        const { error } = await supabase.from('rooms').insert({
+          name: form.name,
+          description: form.description,
+          icon_emoji: form.icon_emoji || '#',
+          accent_color: form.accent_color,
+          is_private: form.is_private,
+          is_confession_box: form.is_confession_box,
+          is_active: form.is_active,
+          message_ttl_hours: ttlSeconds ? Math.round(ttlSeconds / 3600) : null,
+          message_ttl_seconds: ttlSeconds,
+          slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
+          room_password: form.room_password || null,
+          created_by: user.id,
+        })
 
-      if (error) {
-        console.error('Failed to create room:', error)
-        // Most common cause: profile.status is not 'approved' (RLS
-        // is_admin() requires both role='admin' AND status='approved').
-        toast.error(
-          `Failed to create room: ${error.message}` +
-            (error.code === '42501'
-              ? ' (Your account must be an approved admin.)'
-              : '')
-        )
-        return
+        if (error) {
+          console.error('Failed to create room:', error)
+          // Most common cause: profile.status is not 'approved' (RLS
+          // is_admin() requires both role='admin' AND status='approved').
+          toast.error(
+            `Failed to create room: ${error.message}` +
+              (error.code === '42501'
+                ? ' (Your account must be an approved admin.)'
+                : '')
+          )
+          return
+        }
+
+        toast.success('Room created!')
+        setShowCreate(false)
+        resetForm()
+        await loadRooms()
+      } finally {
+        setSaving(false)
       }
-
-      toast.success('Room created!')
-      setShowCreate(false)
-      resetForm()
-      await loadRooms()
     }
 
   async function updateRoom() {
@@ -151,50 +160,63 @@ export default function AdminRoomsPage() {
 
       const ttlSeconds = ttlHoursToSeconds(form.message_ttl_hours)
 
-      // FIX: surface errors. Same pattern as createRoom — without this, a
-      // silently-rejected UPDATE looks identical to a successful one in the UI.
-      const { error } = await supabase
-        .from('rooms')
-        .update({
-          name: form.name,
-          description: form.description,
-          icon_emoji: form.icon_emoji,
-          accent_color: form.accent_color,
-          is_private: form.is_private,
-          is_confession_box: form.is_confession_box,
-          message_ttl_hours: ttlSeconds ? Math.round(ttlSeconds / 3600) : null,
-          message_ttl_seconds: ttlSeconds,
-          slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
-          room_password: form.room_password || null,
-        })
-        .eq('id', editingRoom.id)
+      setSaving(true)
+      try {
+        // FIX: surface errors. Same pattern as createRoom — without this, a
+        // silently-rejected UPDATE looks identical to a successful one in the UI.
+        const { error } = await supabase
+          .from('rooms')
+          .update({
+            name: form.name,
+            description: form.description,
+            // FIX: unlike createRoom, this previously had no fallback —
+            // clearing the emoji field before saving persisted an empty icon.
+            icon_emoji: form.icon_emoji || '#',
+            accent_color: form.accent_color,
+            is_private: form.is_private,
+            is_confession_box: form.is_confession_box,
+            is_active: form.is_active,
+            message_ttl_hours: ttlSeconds ? Math.round(ttlSeconds / 3600) : null,
+            message_ttl_seconds: ttlSeconds,
+            slow_mode_seconds: parseInt(form.slow_mode_seconds) || 0,
+            room_password: form.room_password || null,
+          })
+          .eq('id', editingRoom.id)
 
-      if (error) {
-        console.error('Failed to update room:', error)
-        toast.error(`Failed to update room: ${error.message}`)
-        return
+        if (error) {
+          console.error('Failed to update room:', error)
+          toast.error(`Failed to update room: ${error.message}`)
+          return
+        }
+
+        toast.success('Room updated!')
+        setEditingRoom(null)
+        resetForm()
+        await loadRooms()
+      } finally {
+        setSaving(false)
       }
-
-      toast.success('Room updated!')
-      setEditingRoom(null)
-      resetForm()
-      await loadRooms()
     }
 
   async function deleteRoom(roomId: string) {
-    const { error } = await supabase
-      .from('rooms')
-      .delete()
-      .eq('id', roomId)
+    setDeleting(true)
+    try {
+      const { error } = await supabase
+        .from('rooms')
+        .delete()
+        .eq('id', roomId)
 
-    if (error) {
-      toast.error('Failed to delete room')
-      return
+      if (error) {
+        toast.error(`Failed to delete room: ${error.message}`)
+        return
+      }
+
+      toast.success('Room deleted')
+      setDeletingRoom(null)
+      await loadRooms()
+    } finally {
+      setDeleting(false)
     }
-
-    toast.success('Room deleted')
-    setDeletingRoom(null)
-    await loadRooms()
   }
 
   function resetForm() {
@@ -205,6 +227,7 @@ export default function AdminRoomsPage() {
       accent_color: '#7C3AED',
       is_private: false,
       is_confession_box: false,
+      is_active: true,
       message_ttl_hours: '',
       slow_mode_seconds: '0',
       room_password: '',
@@ -220,6 +243,9 @@ export default function AdminRoomsPage() {
       accent_color: room.accent_color,
       is_private: room.is_private,
       is_confession_box: room.is_confession_box,
+      // FIX: `is_active` exists on the schema but was never populated into
+      // the edit form, so admins had no way to deactivate a room from here.
+      is_active: room.is_active ?? true,
       message_ttl_hours: room.message_ttl_hours?.toString() || '',
       slow_mode_seconds: room.slow_mode_seconds.toString(),
       room_password: room.room_password || '',
@@ -246,9 +272,12 @@ export default function AdminRoomsPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-white">{room.name}</span>
-                {room.room_password && <Lock className="h-3 w-3 text-[#A78BFA]" />}
-                {room.is_private && <Lock className="h-3 w-3 text-[#56566E]" />}
+                {room.room_password && <span title="Password protected"><Lock className="h-3 w-3 text-[#A78BFA]" /></span>}
+                {room.is_private && <span title="Private room"><Lock className="h-3 w-3 text-[#56566E]" /></span>}
                 {room.is_confession_box && <Flame className="h-3 w-3 text-orange-500" />}
+                {room.is_active === false && (
+                  <span className="text-[10px] uppercase tracking-wide text-red-400 border border-red-400/40 rounded px-1">Inactive</span>
+                )}
               </div>
               {room.description && (
                 <p className="text-xs text-[rgba(255,255,255,0.45)]">{room.description}</p>
@@ -318,6 +347,10 @@ export default function AdminRoomsPage() {
                 <Switch checked={form.is_confession_box} onCheckedChange={(v) => setForm({ ...form, is_confession_box: v })} />
                 <Label className="cursor-pointer text-white">Confession Box</Label>
               </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
+                <Label className="cursor-pointer text-white">Active</Label>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -340,8 +373,13 @@ export default function AdminRoomsPage() {
                 </Select>
               </div>
             </div>
-            <Button onClick={editingRoom ? updateRoom : createRoom} className="w-full">
-              {editingRoom ? 'Save Changes' : 'Create Room'}
+            <Button onClick={editingRoom ? updateRoom : createRoom} className="w-full" disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {editingRoom ? 'Saving...' : 'Creating...'}
+                </>
+              ) : editingRoom ? 'Save Changes' : 'Create Room'}
             </Button>
           </div>
         </DialogContent>
@@ -363,9 +401,10 @@ export default function AdminRoomsPage() {
             </Button>
             <Button
               variant="destructive"
+              disabled={deleting}
               onClick={() => deletingRoom && deleteRoom(deletingRoom.id)}
             >
-              <Trash2 className="h-4 w-4 mr-1" />
+              {deleting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}
               Delete Room
             </Button>
           </div>

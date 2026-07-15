@@ -2,12 +2,17 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Pin } from 'lucide-react'
+import { Pin, X } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { toast } from 'sonner'
 
 interface PinnedMessagesBarProps {
   roomId: string
   accentColor: string
+  isAdmin?: boolean
+  isOpen?: boolean
+  onToggleOpen?: () => void
+  onJumpToMessage?: (messageId: string) => void
 }
 
 type PinnedMessage = {
@@ -17,9 +22,20 @@ type PinnedMessage = {
   messages: { content: string; profiles: { anonymous_name: string } } | null
 }
 
-export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessagesBarProps) {
+export default function PinnedMessagesBar({
+  roomId,
+  accentColor,
+  isAdmin,
+  isOpen: isOpenProp,
+  onToggleOpen,
+  onJumpToMessage,
+}: PinnedMessagesBarProps) {
   const [pinnedMessages, setPinnedMessages] = useState<PinnedMessage[]>([])
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpenLocal, setIsOpenLocal] = useState(false)
+  // Allow the parent (e.g. the header "Pin" button) to control open state,
+  // while still working standalone if no controlled props are passed.
+  const isOpen = isOpenProp ?? isOpenLocal
+  const toggleOpen = onToggleOpen ?? (() => setIsOpenLocal((v) => !v))
   // FIX: hoist into a ref so we don't recreate the Supabase client (and
   // its realtime listeners / cookie subscriptions) on every render.
   const supabase = useRef(createClient()).current
@@ -88,12 +104,30 @@ export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessage
     }
   }, [roomId, supabase, loadPinnedMessages])
 
+  const handleUnpin = useCallback(
+    async (pinnedId: string) => {
+      try {
+        const { error } = await supabase.from('pinned_messages').delete().eq('id', pinnedId)
+        if (error) {
+          toast.error('Failed to unpin message')
+          return
+        }
+        setPinnedMessages((prev) => prev.filter((pm) => pm.id !== pinnedId))
+        toast.success('Message unpinned')
+      } catch (err) {
+        console.error('Failed to unpin message:', err)
+        toast.error('Failed to unpin message')
+      }
+    },
+    [supabase]
+  )
+
   if (pinnedMessages.length === 0) return null
 
   return (
     <div className="border-b border-[rgba(255,255,255,0.08)]" style={{ borderLeftColor: accentColor, borderLeftWidth: 3 }}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         className="flex items-center gap-2 px-4 py-1.5 text-xs text-[rgba(255,255,255,0.45)] hover:text-white transition-colors duration-150 w-full"
       >
         <Pin className="h-3 w-3" />
@@ -104,9 +138,12 @@ export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessage
         <ScrollArea className="max-h-32 px-4 pb-2">
           <div className="space-y-1">
             {pinnedMessages.map((pm) => (
-              <div key={pm.id} className="flex items-start gap-2 py-1">
+              <div key={pm.id} className="group flex items-start gap-2 py-1">
                 <Pin className="h-3 w-3 text-[#A78BFA] mt-0.5 shrink-0" />
-                <div className="min-w-0">
+                <button
+                  className="min-w-0 flex-1 text-left"
+                  onClick={() => onJumpToMessage?.(pm.message_id)}
+                >
                   <p className="text-xs text-[rgba(255,255,255,0.45)]">
                     <span className="font-medium text-white">
                       {pm.messages?.profiles?.anonymous_name}
@@ -115,7 +152,16 @@ export default function PinnedMessagesBar({ roomId, accentColor }: PinnedMessage
                   <p className="text-xs text-[rgba(255,255,255,0.45)] truncate">
                     {pm.messages?.content}
                   </p>
-                </div>
+                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleUnpin(pm.id)}
+                    className="shrink-0 opacity-0 group-hover:opacity-100 text-[rgba(255,255,255,0.45)] hover:text-white transition-opacity"
+                    title="Unpin"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
             ))}
           </div>

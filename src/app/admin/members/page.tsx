@@ -21,17 +21,28 @@ export default function AdminMembersPage() {
   const [tab, setTab] = useState('pending')
 
   useEffect(() => {
+    // FIX: selectedIds previously persisted across tab switches. Since
+    // checkboxes only render on the pending/rejected tabs, a selection made
+    // on one tab could silently survive into the other and get bulk-acted
+    // on there instead of the currently-visible rows. Clear it whenever the
+    // tab changes.
+    setSelectedIds(new Set())
     loadMembers()
   }, [tab])
 
   async function loadMembers() {
-    const { data } = await supabase
+    setLoading(true)
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('status', tab === 'pending' ? 'pending' : tab === 'approved' ? 'approved' : tab === 'rejected' ? 'rejected' : 'banned')
       .order('created_at', { ascending: false })
 
-    if (data) setMembers(data)
+    if (error) {
+      toast.error('Failed to load members')
+    } else {
+      setMembers(data || [])
+    }
     setLoading(false)
   }
 
@@ -41,10 +52,12 @@ export default function AdminMembersPage() {
       .update({ status: 'approved' })
       .eq('id', userId)
 
-    if (!error) {
-      toast.success('Member approved')
-      setMembers((prev) => prev.filter((m) => m.id !== userId))
+    if (error) {
+      toast.error(`Failed to approve member: ${error.message}`)
+      return
     }
+    toast.success('Member approved')
+    setMembers((prev) => prev.filter((m) => m.id !== userId))
   }
 
   async function rejectMember(userId: string) {
@@ -53,10 +66,12 @@ export default function AdminMembersPage() {
       .update({ status: 'rejected' })
       .eq('id', userId)
 
-    if (!error) {
-      toast.success('Member rejected')
-      setMembers((prev) => prev.filter((m) => m.id !== userId))
+    if (error) {
+      toast.error(`Failed to reject member: ${error.message}`)
+      return
     }
+    toast.success('Member rejected')
+    setMembers((prev) => prev.filter((m) => m.id !== userId))
   }
 
   async function banMember(userId: string) {
@@ -65,10 +80,12 @@ export default function AdminMembersPage() {
       .update({ status: 'banned' })
       .eq('id', userId)
 
-    if (!error) {
-      toast.success('Member banned')
-      setMembers((prev) => prev.filter((m) => m.id !== userId))
+    if (error) {
+      toast.error(`Failed to ban member: ${error.message}`)
+      return
     }
+    toast.success('Member banned')
+    setMembers((prev) => prev.filter((m) => m.id !== userId))
   }
 
   async function unbanMember(userId: string) {
@@ -77,23 +94,23 @@ export default function AdminMembersPage() {
       .update({ status: 'approved' })
       .eq('id', userId)
 
-    if (!error) {
-      toast.success('Member unbanned')
-      setMembers((prev) => prev.filter((m) => m.id !== userId))
+    if (error) {
+      toast.error(`Failed to unban member: ${error.message}`)
+      return
     }
+    toast.success('Member unbanned')
+    setMembers((prev) => prev.filter((m) => m.id !== userId))
   }
 
   async function bulkApprove() {
-    for (const id of selectedIds) {
-      await approveMember(id)
-    }
+    const ids = Array.from(selectedIds)
+    await Promise.all(ids.map((id) => approveMember(id)))
     setSelectedIds(new Set())
   }
 
   async function bulkReject() {
-    for (const id of selectedIds) {
-      await rejectMember(id)
-    }
+    const ids = Array.from(selectedIds)
+    await Promise.all(ids.map((id) => rejectMember(id)))
     setSelectedIds(new Set())
   }
 

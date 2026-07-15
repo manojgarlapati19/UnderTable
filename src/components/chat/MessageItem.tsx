@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { cn } from '@/lib/utils/cn'
 import { getRelativeTime, getFullTimestamp } from '@/lib/utils/time'
 import { getAvatarGradient } from '@/lib/utils/avatar-color'
@@ -216,6 +216,8 @@ export default function MessageItem({
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
   const editRef = useRef<HTMLTextAreaElement>(null)
   const messageRef = useRef<HTMLDivElement>(null)
+  const actionBarRef = useRef<HTMLDivElement>(null)
+  const [barShiftX, setBarShiftX] = useState(0)
   const [timeAgo, setTimeAgo] = useState(() => getRelativeTime(message.created_at))
   const isDeleted = message.is_deleted
 
@@ -252,6 +254,29 @@ export default function MessageItem({
       setShowBelow(rect.top < 80)
     }
   }, [showActions])
+
+  // FIX: the action bar was anchored with fixed `right-4`/`left-16` offsets
+  // and no viewport-edge detection. On narrow columns (or messages near an
+  // edge) the ~300px-wide bar (5 reaction buttons + up to 6 action icons)
+  // could render partially or fully off-screen. Measure the bar after it
+  // mounts and nudge it back into view with a transform instead of relying
+  // on the fixed anchor alone.
+  useLayoutEffect(() => {
+    if (!showActions || !actionBarRef.current) {
+      setBarShiftX(0)
+      return
+    }
+    const margin = 8
+    const rect = actionBarRef.current.getBoundingClientRect()
+    let shift = 0
+    if (rect.right > window.innerWidth - margin) {
+      shift = window.innerWidth - margin - rect.right
+    }
+    if (rect.left + shift < margin) {
+      shift = margin - rect.left
+    }
+    setBarShiftX(shift)
+  }, [showActions, showBelow])
 
   function handleSaveEdit() {
     if (editContent.trim() && editContent !== message.content) {
@@ -529,11 +554,13 @@ export default function MessageItem({
       {/* Floating action bar */}
       {showActions && !isEditing && (
         <div
+          ref={actionBarRef}
           className={cn(
             'absolute z-50 animate-fade-in',
             showBelow ? 'top-full mt-1' : '-top-9',
             isOwn ? 'right-4' : 'left-16'
           )}
+          style={barShiftX ? { transform: `translateX(${barShiftX}px)` } : undefined}
         >
           <div className="rounded-[13px] border border-[rgba(255,255,255,0.2)] bg-[rgba(15,10,40,0.92)] shadow-xl px-1 py-0.5 backdrop-blur-[20px] flex items-center">
             <ReactionBar

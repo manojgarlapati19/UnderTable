@@ -36,10 +36,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/pending', request.url))
   }
 
-  // Redirect banned users to login with error
-  if (profile?.status === 'banned') {
+  // Redirect banned users to login with error. Skip if already headed to
+  // /login — otherwise this redirects to the exact same URL forever
+  // (a banned user landing on /login would get bounced to /login?error=banned,
+  // which re-triggers this same check on the next request and loops).
+  if (profile?.status === 'banned' && !pathname.startsWith('/login')) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('error', 'banned')
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // FIX: a 'rejected' user with a still-valid session was never handled here
+  // — only 'pending' and 'banned' redirected away from protected routes, so
+  // a rejected signup could still reach /chat as long as their session
+  // hadn't expired. Treat rejected the same as banned.
+  if (profile?.status === 'rejected' && !pathname.startsWith('/login') && !isPublicRoute) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('error', 'rejected')
     return NextResponse.redirect(loginUrl)
   }
 
@@ -56,6 +69,9 @@ export async function middleware(request: NextRequest) {
     if (profile.status === 'approved') {
       return NextResponse.redirect(new URL('/chat', request.url))
     }
+    // 'rejected'/'banned' users are intentionally left alone here so they
+    // can still view /login (to see the error banner) or /invite/signup
+    // (in case they want to try a fresh invite code).
   }
 
   return supabaseResponse

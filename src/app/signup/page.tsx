@@ -100,6 +100,11 @@ function SignupPage() {
     setLoading(true)
     setError('')
 
+    // FIX: `invite-signup` atomically increments uses_count before we've
+    // actually created the account. If a later step fails, release that
+    // claim so a max_uses:1 invite isn't burned by a failed attempt.
+    let claimed = false
+
     try {
       // FIX: re-validate the invite before creating the user. The previous
       // flow only validated on mount, so a user could submit against an
@@ -115,6 +120,7 @@ function SignupPage() {
           preClaim?.error || 'This invite link is no longer valid.'
         )
       }
+      claimed = true
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -144,6 +150,15 @@ function SignupPage() {
       const message = err instanceof Error ? err.message : 'Failed to create account'
       setError(message)
       toast.error(message)
+      if (claimed && inviteCode) {
+        // Best-effort — if this itself fails there's nothing more we can
+        // do client-side, and it's not worth blocking on.
+        supabase.rpc('release_invite_code', { p_code: inviteCode }).then(
+          ({ error: releaseErr }) => {
+            if (releaseErr) console.error('Failed to release invite claim:', releaseErr)
+          }
+        )
+      }
     } finally {
       setLoading(false)
     }

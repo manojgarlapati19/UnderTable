@@ -96,6 +96,7 @@ export default function AdminAnalyticsPage() {
         .from('messages')
         .select('room_id, rooms!inner(name, icon_emoji)')
         .gte('created_at', startDate)
+        .eq('is_deleted', false)
 
       const roomMessages = roomMessagesRaw as unknown as RoomMessage[] | null
       if (roomMessages) {
@@ -135,8 +136,21 @@ export default function AdminAnalyticsPage() {
         )
       }
 
+      // FIX: this previously omitted `.eq('is_deleted', false)`, so soft-deleted
+      // messages inflated the all-time total relative to the (correctly
+      // filtered) per-day/per-hour charts above.
       const { count: totalMessages } = await supabase
-        .from('messages').select('*', { count: 'exact', head: true })
+        .from('messages').select('*', { count: 'exact', head: true }).eq('is_deleted', false)
+
+      // FIX: `avgMessagesPerDay` previously divided the *all-time* total by
+      // the selected range's day count, which isn't a meaningful average and
+      // changed only because the denominator changed. Compute it from the
+      // messages actually inside the selected range instead.
+      const { count: messagesInRange } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_deleted', false)
+        .gte('created_at', startDate)
 
       const { count: totalMembers } = await supabase
         .from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'approved')
@@ -144,14 +158,25 @@ export default function AdminAnalyticsPage() {
       const { count: roomsCount } = await supabase
         .from('rooms').select('*', { count: 'exact', head: true })
 
+      // FIX: "Active Today" was hard-coded to 0 and never computed.
+      // Approximate it as the number of distinct senders who posted today.
+      const startOfToday = new Date()
+      startOfToday.setHours(0, 0, 0, 0)
+      const { data: activeTodayRows } = await supabase
+        .from('messages')
+        .select('user_id')
+        .eq('is_deleted', false)
+        .gte('created_at', startOfToday.toISOString())
+      const activeToday = new Set((activeTodayRows || []).map((r) => r.user_id)).size
+
       const totalDays = daysAgo || 1
 
       setStats({
         totalMessages: totalMessages || 0,
         totalMembers: totalMembers || 0,
-        activeToday: 0,
+        activeToday,
         roomsCount: roomsCount || 0,
-        avgMessagesPerDay: Math.round((totalMessages || 0) / Math.max(totalDays, 1)),
+        avgMessagesPerDay: Math.round((messagesInRange || 0) / Math.max(totalDays, 1)),
       })
     } catch (error) {
       console.error('Failed to load analytics:', error)

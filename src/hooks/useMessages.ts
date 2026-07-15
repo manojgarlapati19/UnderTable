@@ -106,7 +106,11 @@ export function useMessages({
         .eq('is_deleted', false)
         // Drop messages whose TTL has elapsed but the cleanup job hasn't
         // removed them yet. `expires_at` is nullable for non-expiring messages.
-        .or('expires_at.is.null,expires_at.gt.now()')
+        // PostgREST doesn't evaluate `now()` as a SQL function inside a
+        // `.or()` filter string -- it was being compared as the literal text
+        // "now()", which fails to cast to timestamptz. Pass an actual ISO
+        // timestamp computed client-side instead.
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order('created_at', { ascending: true })
         .limit(limit)
 

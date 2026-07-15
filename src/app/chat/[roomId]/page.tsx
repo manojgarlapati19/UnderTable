@@ -49,9 +49,19 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
 
   // Search state
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [pinnedBarOpen, setPinnedBarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [isCheckingAccess, setIsCheckingAccess] = useState(true)
+  // FIX: previously a password-protected room reached by direct URL entry,
+  // bookmark, or back/forward navigation (i.e. any path that didn't go
+  // through LeftSidebar's click handler) would bounce straight back to
+  // /chat with a toast and no way to actually enter the password. Offer
+  // the same in-page prompt here instead of only redirecting.
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false)
+  const [passwordInput, setPasswordInput] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [verifyingPassword, setVerifyingPassword] = useState(false)
 
   // Confirmation dialogs
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
@@ -160,8 +170,9 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
       if (hasPassword) {
         const hasAccess = sessionStorage.getItem(`room_access_${params.roomId}`)
         if (!hasAccess) {
-          toast.error('This room is password protected')
-          router.push('/chat')
+          setShowPasswordPrompt(true)
+          // Leave isCheckingAccess true — the room stays gated behind the
+          // password dialog until verified or the user cancels.
           return
         }
       }
@@ -169,6 +180,30 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     } catch (err) {
       console.error('Failed to check room access:', err)
       setIsCheckingAccess(false)
+    }
+  }
+
+  async function handlePasswordSubmit() {
+    setVerifyingPassword(true)
+    setPasswordError('')
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-room-password', {
+        body: { room_id: params.roomId, password: passwordInput },
+      })
+
+      if (error || !data?.valid) {
+        setPasswordError('Incorrect passcode. Try again.')
+        return
+      }
+
+      sessionStorage.setItem(`room_access_${params.roomId}`, 'true')
+      setShowPasswordPrompt(false)
+      setPasswordInput('')
+      setIsCheckingAccess(false)
+    } catch {
+      setPasswordError('Failed to verify passcode. Try again.')
+    } finally {
+      setVerifyingPassword(false)
     }
   }
 
@@ -390,6 +425,66 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
     []
   )
 
+  if (showPasswordPrompt) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Dialog
+          open={showPasswordPrompt}
+          onOpenChange={(open) => {
+            if (!open) {
+              setShowPasswordPrompt(false)
+              setPasswordInput('')
+              setPasswordError('')
+              router.push('/chat')
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>🔒 This room is password protected</DialogTitle>
+              <DialogDescription>Enter the passcode to access this room</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => { setPasswordInput(e.target.value); setPasswordError('') }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handlePasswordSubmit() }}
+                placeholder="Enter passcode"
+                autoFocus
+                className={cn(passwordError && 'border-red-500')}
+              />
+              {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowPasswordPrompt(false)
+                    setPasswordInput('')
+                    setPasswordError('')
+                    router.push('/chat')
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handlePasswordSubmit} disabled={verifyingPassword}>
+                  {verifyingPassword ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    'Unlock'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    )
+  }
+
   if (isCheckingAccess) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -457,7 +552,16 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
             <Search className="h-4 w-4" />
           </Button>
 
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[11px]">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              'h-8 w-8 rounded-[11px] transition-all duration-150',
+              pinnedBarOpen ? 'bg-[rgba(167,139,250,0.2)] text-[#C4B5FD]' : ''
+            )}
+            onClick={() => setPinnedBarOpen((v) => !v)}
+            title="Pinned messages"
+          >
             <Pin className="h-4 w-4" />
           </Button>
 
@@ -509,7 +613,14 @@ export default function ChatRoomPage({ params }: RoomPageProps) {
       <div className="h-0.5 w-full" style={{ backgroundColor: accentColor }} />
 
       {/* Pinned Messages Bar */}
-      <PinnedMessagesBar roomId={params.roomId} accentColor={accentColor} />
+      <PinnedMessagesBar
+        roomId={params.roomId}
+        accentColor={accentColor}
+        isAdmin={isAdmin}
+        isOpen={pinnedBarOpen}
+        onToggleOpen={() => setPinnedBarOpen((v) => !v)}
+        onJumpToMessage={handleJumpToMessage}
+      />
 
       {/* Messages */}
       <MessageList
